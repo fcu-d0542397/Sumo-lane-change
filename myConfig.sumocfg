@@ -1,0 +1,14 @@
+<configuration>
+<input>
+<net-file value="myNet.net.xml"/>
+<route-files value ="myRoute.rou.xml"/>
+</input>
+<time>
+<step-length value="0.01" />
+<begin value = "0"/>
+<end value = "5000"/>
+</time>
+<processing>
+    <lanechange.duration value="3"/>
+</processing>
+</configuration>
