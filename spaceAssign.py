@@ -1,6 +1,10 @@
 import math
 import os
 import traci
+from decimal import Decimal
+from sympy import *
+import threading
+import time
 sumoBinary = "C:\\Program Files (x86)\\Eclipse\\Sumo\\bin\\sumo-gui.exe"
 sumoCmd = [sumoBinary, "-c",
            "C:\\Users\\user\\Desktop\\sumo\\laneChange\\space\\myConfig.sumocfg"]
@@ -13,6 +17,128 @@ changeSpeedTime = []
 stopChangeFlag = 0
 allChangeFlag = -1
 zoomOut = []
+allAre1 = 0
+
+x = Symbol('x')
+
+# allSpace = []
+fleetPosition = []
+otherPosition = []
+
+fleetLandID = []
+otherLandID = []
+
+
+# test area
+changeFlag2 = []
+changeSpeedTime2 = []
+def changeInit2():
+    for i in range(6):
+        changeFlag2.append(0)
+
+def changeTime2():
+    for i in range(6):
+        changeSpeedTime2.append(-1)
+
+def calFollowSpeed(nowSpeed, frontSpeed, distance, notice, brakeMax):
+    follow = (nowSpeed**2 * brakeMax) / (frontSpeed**2 +2 * brakeMax * (distance - nowSpeed * notice))
+    return follow
+
+def calRiskBySpeed(nowSpeed, frontSpeed, maxBrake, notice, expect):
+    solve_value = solve([((nowSpeed**2 * maxBrake)/(frontSpeed**2 + 2*maxBrake*(x - nowSpeed * 0.1)) / maxBrake) - expect],[x])
+    return solve_value
+
+# 0823
+def initPosition():
+    for i in range(11):
+        fleetPosition.append(0)
+        otherPosition.append(0)
+        fleetLandID.append(-1)
+        otherLandID.append(-1)
+
+def getAllPosition():
+    for i in range(11):
+        veh = "veh" + str(i)
+        no = "no" + str(i)
+        fleetPosition[i] = traci.vehicle.getPosition(veh)[0]
+        otherPosition[i] = traci.vehicle.getPosition(no)[0]
+        # print (type(fleetPosition[i]))
+        # print("fleet: "+str(traci.vehicle.getLaneIndex(veh)))
+
+def getAllLaneID():
+    for i in range(11):
+        veh = "veh" + str(i)
+        no = "no" + str(i)
+        fleetLandID[i] = traci.vehicle.getLaneIndex(veh)
+        otherLandID[i] = traci.vehicle.getLaneIndex(no)
+        # print("veh"+str(i)+" LaneID: "+ str(fleetLandID[i]))
+
+def calClosestCar(now, index):
+    landID = traci.vehicle.getLaneIndex(now)
+    nowPosition = traci.vehicle.getPosition(now)[0]
+    # min = -1
+    minIndex = 0
+    fleetOrNot = -1
+
+    # if changeFlag[index] == 1 :
+    #     min = -1
+    #     for i in range(11):
+    #         if nowPosition < fleetPosition[i] and fleetPosition[i] - nowPosition > 1:
+    #             if min == -1:
+    #                 min = fleetPosition[i] - nowPosition
+    #                 minIndex = i
+    #                 fleetOrNot = 1
+    #             else:
+    #                 if min > fleetPosition[i] - nowPosition:
+    #                     min = fleetPosition[i] - nowPosition
+    #                     minIndex = i
+    #                     fleetOrNot = 1
+    #     for i in range(11):
+    #         if nowPosition < otherPosition[i] and otherPosition[i] - nowPosition > 1:
+    #             if min == -1:
+    #                 min = otherPosition[i] - nowPosition
+    #                 minIndex = i
+    #                 fleetOrNot = 0
+    #             else:
+    #                 if min > otherPosition[i] - nowPosition:
+    #                     min = otherPosition[i] - nowPosition
+    #                     minIndex = i
+    #                     fleetOrNot = 0
+    #                     print("sfdsff")
+    # else:
+    # print("Nothing.............")
+    min = -1
+    for i in range(11):
+        if landID == fleetLandID[i] and fleetPosition[index] < fleetPosition[i] and i != index:
+            if min == -1:
+                min = fleetPosition[i] - fleetPosition[index]
+                minIndex = i
+                fleetOrNot = 1
+                # print("case 1: "+str(min))
+            else:
+                if min > fleetPosition[i] - fleetPosition[index]:
+                    min = fleetPosition[i] - fleetPosition[index]
+                    minIndex = i
+                    fleetOrNot = 1
+                    # print("case 2: "+str(min))
+    for i in range(11):
+        if landID == otherLandID[i] and fleetPosition[index] < otherPosition[i] and i != index:
+            if min == -1:
+                min = otherPosition[i] - fleetPosition[index]
+                minIndex = i
+                fleetOrNot = 0
+                # print("case 3: "+str(min))
+            else:
+                if min > otherPosition[i] - fleetPosition[index]:
+                    min = otherPosition[i] - fleetPosition[index]
+                    minIndex = i
+                    fleetOrNot = 0
+                    # print("case 4: "+str(min))
+
+    return [fleetOrNot, minIndex]
+            
+            
+            
 
 
 def calSpace():
@@ -44,20 +170,25 @@ def noNoChange():
 
 
 def speedModeInit():
-    traci.vehicle.setSpeedMode("veh0", 0)
-    traci.vehicle.setSpeedMode("veh1", 0)
-    traci.vehicle.setSpeedMode("veh2", 0)
-    traci.vehicle.setSpeedMode("veh3", 0)
+    speedMode = 0
+    traci.vehicle.setSpeedMode("veh0", speedMode)
+    traci.vehicle.setSpeedMode("veh1", speedMode)
+    traci.vehicle.setSpeedMode("veh2", speedMode)
+    traci.vehicle.setSpeedMode("veh3", speedMode)
 
-    traci.vehicle.setSpeedMode("veh4", 0)
-    traci.vehicle.setSpeedMode("veh5", 0)
-    traci.vehicle.setSpeedMode("veh6", 0)
-    traci.vehicle.setSpeedMode("veh7", 0)
+    traci.vehicle.setSpeedMode("veh4", speedMode)
+    traci.vehicle.setSpeedMode("veh5", speedMode)
+    traci.vehicle.setSpeedMode("veh6", speedMode)
+    traci.vehicle.setSpeedMode("veh7", speedMode)
 
-    traci.vehicle.setSpeedMode("veh8", 0)
-    traci.vehicle.setSpeedMode("veh9", 0)
-    traci.vehicle.setSpeedMode("veh10", 0)
-    traci.vehicle.setSpeedMode("veh11", 0)
+    traci.vehicle.setSpeedMode("veh8", speedMode)
+    traci.vehicle.setSpeedMode("veh9", speedMode)
+    traci.vehicle.setSpeedMode("veh10", speedMode)
+    traci.vehicle.setSpeedMode("veh11", speedMode)
+
+
+def changeCarSpeedMode(car, speedMode):
+    traci.vehicle.setSpeedMode(car, speedMode)
 
 
 def changeInit():
@@ -69,7 +200,7 @@ def speedInit():
     for i in range(11):
         vehString3 = "veh"+str(i)
         # no = "no"+str(i)
-        traci.vehicle.setSpeed(vehString3, 30)
+        traci.vehicle.setSpeed(vehString3, 20)
         # traci.vehicle.setSpeed(no, 10)
 
 
@@ -82,6 +213,79 @@ def initZoomFlag():
     for i in range(10):
         zoomOut.append(-1)
 
+def riskFollowing():
+    global allAre1
+    allAre1 = 0
+    for i in range(1, 11):
+        now = "veh"+str(i)
+        front = "veh"+str(i-1)
+        closeset = calClosestCar(now, i)
+        if closeset[0] == 0:
+            front = "no"+str(closeset[1])
+        elif closeset[0] == 1:
+            front = "veh"+str(closeset[1])
+        print(now+" follwing: "+front)
+        
+        if "no" in front:
+            notice = 1.5
+        elif "no" in now:
+            notice = 1.5
+        elif "veh" in now and  "veh" in front:
+            notice = 0.1
+
+        notice = 0.1
+        frontSpeed = traci.vehicle.getSpeed(front)
+        nowSpeed = traci.vehicle.getSpeed(now)
+        gap = abs(traci.vehicle.getPosition(now)[0] - traci.vehicle.getPosition(front)[0]) - 4
+        acci = calFollowSpeed(nowSpeed, frontSpeed, gap, notice, 8)
+        followRisk = acci / 8
+        if followRisk >= 0.95:
+            # solve_value = solve([((nowSpeed**2 * 8)/(frontSpeed**2 + 2*8*(x - nowSpeed * notice)) / 8) - 1],[x])
+            solve_value = calRiskBySpeed(nowSpeed,frontSpeed, 8, notice, 0.95)
+            # print("nowSpeed: "+str(nowSpeed)+" frontSpeed: "+str(frontSpeed)+" safetyDistace: "+ str(solve_value))
+            if ":" in str(solve_value):
+                characters = "{,x:}"
+                tempString = str(solve_value)
+                for i in range(len(characters)):
+                    tempString = tempString.replace(characters[i], "")
+                saftyDistace = float(tempString)
+
+            # if saftyDistace > gap:
+            #     offset = saftyDistace - gap
+
+
+
+            if saftyDistace > gap:
+                crashTime = gap / (nowSpeed)
+                distaceOffset = saftyDistace - gap
+                if crashTime <= notice:
+                    distaceOffset10 = (distaceOffset / 8) / 10
+                else:
+                    oneSecondPlus = distaceOffset / crashTime
+                    distaceOffset10 = (distaceOffset / oneSecondPlus) / 10
+                # print("distaceOffset10: "+str(distaceOffset10 * 10))
+                if traci.vehicle.getSpeed(now) - distaceOffset10 > 0:
+                    newSpeed = traci.vehicle.getSpeed(now) - distaceOffset10
+                    traci.vehicle.setSpeed(now, newSpeed)
+                    print ("newSpeed: "+str(newSpeed))
+            elif abs(saftyDistace - gap) <= 0.1:
+                return 0
+            elif saftyDistace < gap:
+                distaceOffset = gap - saftyDistace
+                distaceOffset10 = (distaceOffset / 6) 
+                newSpeed = traci.vehicle.getSpeed(now) + distaceOffset / 2
+                traci.vehicle.setSpeed(now, newSpeed)
+        else:
+            allAre1 = allAre1 + 1
+    return allAre1
+            
+
+# def backRiskSpeed():
+#     while step < 40000:
+#         if step > 1:
+#             riskFollowing(0.1)
+
+# t = threading.Thread(target = backRiskSpeed)
 
 while step < 40000:
     traci.simulationStep()
@@ -100,11 +304,19 @@ while step < 40000:
         print("File removed successfully")
         path = 'output3.txt'
         f3 = open(path, 'a')
+        # t.start()
 
     # if step > 0 and step % 100 == 0:
     #    calSpace()
 
     if step == 0:
+        initPosition()
+
+        # solve_value = solve([((10**2 * 8)/(10**2 + 2*8*(x - 10 * 0.1)) / 8) - 1],[x])
+        # calRiskBySpeed(30,30,8,0,1)
+        # print(calRiskBySpeed(30,30,8,0,1))
+
+
         traci.vehicle.setEmergencyDecel("veh11", 0)
         traci.vehicle.setSpeed("veh11", 0)
 
@@ -134,8 +346,17 @@ while step < 40000:
         changeInit()
         changeTime()
 
+# test area -----------------------------------
+        changeInit2()
+        changeTime2()
+
     veh0 = traci.vehicle.getPosition("veh0")
     veh11 = traci.vehicle.getPosition("veh11")
+
+    if step > 0:
+        getAllPosition()
+        getAllLaneID()
+        riskFollowing()
 
     # if step == 1000:
     #    # traci.vehicle.changeLane("veh1", 1, 300)
@@ -148,40 +369,78 @@ while step < 40000:
     #       veh = "veh" + str(i)
     #       traci.vehicle.setSpeed(veh, 20)
 
-    if step == 2000:
+    if step == 1:
         for i in range(10):
             vehString = "veh"+str(i+1)
             traci.vehicle.setSpeed(vehString, 30)
 
-    if step > 2000:
-        for i in range(10):
-            front = "veh"+str(i)
-            back = "veh" + str(i+1)
-            if traci.vehicle.getPosition(front)[0]-traci.vehicle.getPosition(back)[0] > 40:
-               traci.vehicle.setSpeed(back, -1)
+    # if step > 300:
+    #     for i in range(10):
+    #         front = "veh"+str(i)
+    #         back = "veh" + str(i+1)
+    #         if traci.vehicle.getPosition(front)[0]-traci.vehicle.getPosition(back)[0] < 20:
+    #            traci.vehicle.setSpeed(back, 20)
 
 
-    # if step > 2000 and stopChangeFlag < 11:
-    #    for i in range(11):
-    #       veh = "veh" + str(i)
-    #       no = "no" + str(i)
-    #       if traci.vehicle.getPosition(no)[0]-traci.vehicle.getPosition(veh)[0] < 60 and changeFlag[i] == 0:
-    #          traci.vehicle.changeLane(veh, 1, 300)
-    #          changeFlag[i] = 1
-    #          changeSpeedTime[i] = step + 150
-    #          stopChangeFlag = stopChangeFlag + 1
-    #          # traci.vehicle.setSpeed(veh, -1)
+    if step > 1500 and stopChangeFlag < 11 and allAre1 > 9:
+       for i in range(11):
+          veh = "veh" + str(i)
+          no = "no" + str(i)
+          veh1 = "veh" + str(i-1)
+          no1 = "no" + str(i+1)
+          if i > 0 and traci.vehicle.getPosition(no)[0]-traci.vehicle.getPosition(veh1)[0] < 40 and changeFlag[i] == 0:
+            if i % 2 == 0:
+                traci.vehicle.changeLane(veh1, 1, 300)
+                traci.vehicle.changeLane(veh, 1, 300)
+                changeFlag[i] = 1
+                changeSpeedTime[i] = step + 150
+                stopChangeFlag = stopChangeFlag + 1
+             # traci.vehicle.setSpeed(veh, -1)
 
     # if step > 2000 and  allChangeFlag == -1:
     #    for i in range(11):
     #       if step == changeSpeedTime[i]:
     #          veh = "veh" + str(i)
     #          no = "no" + str(i)
+    #          veh1 = "veh" + str(i-1)
     #          print("now changing"+ str(i))
-    #          traci.vehicle.setSpeed(veh, traci.vehicle.getSpeed(no))
-    #          traci.vehicle.setSpeed(veh, traci.vehicle.getSpeed(no))
+    #          if i % 2 == 0:
+    #             traci.vehicle.setSpeed(veh1, traci.vehicle.getSpeed(no))
+    #             tempSpeed = traci.vehicle.getSpeed(no)
+    #             changeCarSpeedMode(veh, 1)
+    #             traci.vehicle.setSpeed(veh,  -1)
+             
     #    if -1 in changeSpeedTime == False:
     #       allChangeFlag = 0
+
+
+
+    # if step > 2000 and stopChangeFlag < 6:
+    #     for i in range(6):
+    #         veh = "veh" + str(2*i)
+    #         no = "no" + str(2*i)
+    #         vehBack = "veh" + str(2*i+1)
+    #         if i % 2 == 0:
+    #             if traci.vehicle.getPosition(no)[0]-traci.vehicle.getPosition(veh)[0] < 60 and changeFlag2[i] == 0:
+    #                 traci.vehicle.changeLane(veh, 1, 300)
+    #                 traci.vehicle.changeLane(vehBack, 1, 300)
+    #                 changeSpeedTime2[i] = step + 200
+    #                 stopChangeFlag = stopChangeFlag + 1
+
+    # if step > 2000 and  allChangeFlag == -1:
+    #     for i in range(6):
+    #         if step == changeSpeedTime2[i]:
+    #             veh = "veh" + str(2*i)
+    #             no = "no" + str(2*i)
+    #             vehBack = "veh" + str(2*i+1)
+    #             print("now changing"+ str(i))
+    #             if i % 2 == 0:
+    #                 traci.vehicle.setSpeed(veh, traci.vehicle.getSpeed(no))
+    #                 traci.vehicle.setSpeed(vehBack,  traci.vehicle.getSpeed(no))
+             
+    # if -1 in changeSpeedTime2 == False:
+    #     allChangeFlag = 0
+    
 
     # if traci.vehicle.getLaneID("veh0") == traci.vehicle.getLaneID("veh11") and abs(veh0[0] - veh11[0]) < 10:
     #    for i in range(11):
