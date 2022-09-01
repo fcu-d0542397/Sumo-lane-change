@@ -45,8 +45,13 @@ def calFollowSpeed(nowSpeed, frontSpeed, distance, notice, brakeMax):
     return follow
 
 def calRiskBySpeed(nowSpeed, frontSpeed, maxBrake, notice, expect):
-    solve_value = solve([((nowSpeed**2 * maxBrake)/(frontSpeed**2 + 2*maxBrake*(x - nowSpeed * 0.1)) / maxBrake) - expect],[x])
+    solve_value = solve([((nowSpeed**2 * maxBrake)/(frontSpeed**2 + 2*maxBrake*(x - nowSpeed * notice)) / maxBrake) - expect],[x])
     return solve_value
+
+def calSlideDistace(speed, maxBrake, time):
+    slideDistace = speed * time - 0.5 * maxBrake * (time**2)
+    return slideDistace
+
 
 # 0823
 def initPosition():
@@ -224,7 +229,7 @@ def riskFollowing():
             front = "no"+str(closeset[1])
         elif closeset[0] == 1:
             front = "veh"+str(closeset[1])
-        print(now+" follwing: "+front)
+        # print(now+" follwing: "+front)
         
         if "no" in front:
             notice = 1.5
@@ -233,48 +238,71 @@ def riskFollowing():
         elif "veh" in now and  "veh" in front:
             notice = 0.1
 
-        notice = 0.1
+        # notice = 0.1
         frontSpeed = traci.vehicle.getSpeed(front)
         nowSpeed = traci.vehicle.getSpeed(now)
-        gap = abs(traci.vehicle.getPosition(now)[0] - traci.vehicle.getPosition(front)[0]) - 4
+        gap = traci.vehicle.getPosition(front)[0] - traci.vehicle.getPosition(now)[0] - 4
         acci = calFollowSpeed(nowSpeed, frontSpeed, gap, notice, 8)
+        
+
         followRisk = acci / 8
-        if followRisk >= 0.95:
+        if abs(followRisk) >= 1:
             # solve_value = solve([((nowSpeed**2 * 8)/(frontSpeed**2 + 2*8*(x - nowSpeed * notice)) / 8) - 1],[x])
-            solve_value = calRiskBySpeed(nowSpeed,frontSpeed, 8, notice, 0.95)
+            solve_value = calRiskBySpeed(nowSpeed, frontSpeed, 8, notice, 1)
             # print("nowSpeed: "+str(nowSpeed)+" frontSpeed: "+str(frontSpeed)+" safetyDistace: "+ str(solve_value))
             if ":" in str(solve_value):
                 characters = "{,x:}"
                 tempString = str(solve_value)
-                for i in range(len(characters)):
-                    tempString = tempString.replace(characters[i], "")
+                for j in range(len(characters)):
+                    tempString = tempString.replace(characters[j], "")
                 saftyDistace = float(tempString)
 
+            # if i == 9:
+            #     print("\n"+now+" follwing: "+front)
+            #     print("nowSpeed: "+str(nowSpeed))
+            #     print("frontSpeed: "+str(frontSpeed))
+            #     print("notice: "+str(notice))
+            #     print("laneID: "+str(fleetLandID[i]))
+            #     print("followRisk : " +str(followRisk))
+            #     print("safe distace : " +str(saftyDistace))
+            #     print("gap : " +str(gap))
+            #     print("acci: "+ str(acci))
+            # 
+              
             # if saftyDistace > gap:
             #     offset = saftyDistace - gap
 
-
-
             if saftyDistace > gap:
-                crashTime = gap / (nowSpeed)
-                distaceOffset = saftyDistace - gap
-                if crashTime <= notice:
-                    distaceOffset10 = (distaceOffset / 8) / 10
-                else:
-                    oneSecondPlus = distaceOffset / crashTime
-                    distaceOffset10 = (distaceOffset / oneSecondPlus) / 10
-                # print("distaceOffset10: "+str(distaceOffset10 * 10))
-                if traci.vehicle.getSpeed(now) - distaceOffset10 > 0:
-                    newSpeed = traci.vehicle.getSpeed(now) - distaceOffset10
+                oneSpeed = 8 / 10
+                if traci.vehicle.getSpeed(now) - oneSpeed > 0:
+                    newSpeed = traci.vehicle.getSpeed(now) - oneSpeed
                     traci.vehicle.setSpeed(now, newSpeed)
-                    print ("newSpeed: "+str(newSpeed))
-            elif abs(saftyDistace - gap) <= 0.1:
-                return 0
-            elif saftyDistace < gap:
-                distaceOffset = gap - saftyDistace
-                distaceOffset10 = (distaceOffset / 6) 
-                newSpeed = traci.vehicle.getSpeed(now) + distaceOffset / 2
-                traci.vehicle.setSpeed(now, newSpeed)
+                    if i == 9:
+                        print("oneSpeed : " +str(oneSpeed))
+                        print("newSpeed : " +str(newSpeed))
+
+
+
+            # if saftyDistace > gap:
+            #     crashTime = gap / (nowSpeed)
+            #     distaceOffset = saftyDistace - gap
+            #     if crashTime <= notice:
+            #         distaceOffset10 = (distaceOffset / 8) / 10
+            #     else:
+            #         oneSecondPlus = distaceOffset / crashTime
+            #         distaceOffset10 = (distaceOffset / oneSecondPlus) / 10
+            #     # print("distaceOffset10: "+str(distaceOffset10 * 10))
+            #     if traci.vehicle.getSpeed(now) - distaceOffset10 > 0:
+            #         newSpeed = traci.vehicle.getSpeed(now) - distaceOffset10
+            #         traci.vehicle.setSpeed(now, newSpeed)
+            #         # print ("newSpeed: "+str(newSpeed))
+            # elif abs(saftyDistace - gap) <= 0.1:
+            #     return 0
+            # elif saftyDistace < gap:
+            #     distaceOffset = gap - saftyDistace
+            #     distaceOffset10 = (distaceOffset / 6) 
+            #     newSpeed = traci.vehicle.getSpeed(now) + distaceOffset / 2
+            #     traci.vehicle.setSpeed(now, newSpeed)
         else:
             allAre1 = allAre1 + 1
     return allAre1
@@ -381,21 +409,43 @@ while step < 40000:
     #         if traci.vehicle.getPosition(front)[0]-traci.vehicle.getPosition(back)[0] < 20:
     #            traci.vehicle.setSpeed(back, 20)
 
+    # if step > 1500 and stopChangeFlag < 11 and allAre1 > 9:
+    if step > 1500 and stopChangeFlag < 11:
+        for i in range(11):
+            if i-1 >= 0:
+                veh = "veh" + str(i)
+                no = "no" + str(i)
+                veh1 = "veh" + str(i-1)
+                no1 = "no" + str(i+1)
+                frontSpeed = traci.vehicle.getSpeed(no)
+                nowSpeed = traci.vehicle.getSpeed(veh1)
+                frontSlideDistace = calSlideDistace(frontSpeed, 8, 1.5)
+                safetyDistace = 0
+                if traci.vehicle.getPosition(no)[0]-traci.vehicle.getPosition(veh1)[0] - 4 < 60:
+                    solve_value = calRiskBySpeed(nowSpeed, frontSpeed, 8, 1.5, 1)
+                    if ":" in str(solve_value):
+                        characters = "{,x:}"
+                        tempString = str(solve_value)
+                        for j in range(len(characters)):
+                            tempString = tempString.replace(characters[j], "")
+                        safetyDistace = float(tempString)
+                gap = traci.vehicle.getPosition(no)[0]-traci.vehicle.getPosition(veh1)[0] - 4
 
-    if step > 1500 and stopChangeFlag < 11 and allAre1 > 9:
-       for i in range(11):
-          veh = "veh" + str(i)
-          no = "no" + str(i)
-          veh1 = "veh" + str(i-1)
-          no1 = "no" + str(i+1)
-          if i > 0 and traci.vehicle.getPosition(no)[0]-traci.vehicle.getPosition(veh1)[0] < 40 and changeFlag[i] == 0:
-            if i % 2 == 0:
-                traci.vehicle.changeLane(veh1, 1, 300)
-                traci.vehicle.changeLane(veh, 1, 300)
-                changeFlag[i] = 1
-                changeSpeedTime[i] = step + 150
-                stopChangeFlag = stopChangeFlag + 1
-             # traci.vehicle.setSpeed(veh, -1)
+                if i == 10:
+                    print ("gap: " + str(gap))
+                    print ("safetyDistace: " + str(safetyDistace))
+                    print ("gap + frontSlideDistace: " + str(gap + frontSlideDistace))
+                    print ("nowSpeed * 1.5: " + str(nowSpeed * 1.5))
+                if gap > 0:
+                #   if i > 0 and traci.vehicle.getPosition(no)[0]-traci.vehicle.getPosition(veh1)[0] < 40 and changeFlag[i] == 0:
+                    if i > 0 and gap + frontSlideDistace > (nowSpeed * 1.5)  and  gap - safetyDistace < 1 and safetyDistace < gap  and changeFlag[i] == 0:
+                        if i % 2 == 0:
+                            traci.vehicle.changeLane(veh1, 1, 300)
+                            traci.vehicle.changeLane(veh, 1, 300)
+                            changeFlag[i] = 1
+                            changeSpeedTime[i] = step + 150
+                            stopChangeFlag = stopChangeFlag + 1
+                # traci.vehicle.setSpeed(veh, -1)
 
     # if step > 2000 and  allChangeFlag == -1:
     #    for i in range(11):

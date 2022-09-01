@@ -33,8 +33,8 @@
     <vehicle depart="0" id="no7" route="route0" type="Car2" departLane="1" departPos="1240" departSpeed="0" color="51,255,255"/>
     <vehicle depart="0" id="no8" route="route0" type="Car2" departLane="1" departPos="1180" departSpeed="0" color="51,255,255"/>
     <vehicle depart="0" id="no9" route="route0" type="Car2" departLane="1" departPos="1120" departSpeed="0" color="51,255,255"/>
-    <vehicle depart="0" id="no10" route="route0" type="Car2" departLane="1" departPos="1000" departSpeed="0" color="51,255,255"/>
-    <vehicle depart="0" id="no11" route="route0" type="Car2" departLane="1" departPos="880" departSpeed="0" color="51,255,255"/>
+    <vehicle depart="0" id="no10" route="route0" type="Car2" departLane="1" departPos="1060" departSpeed="0" color="51,255,255"/>
+    <vehicle depart="0" id="no11" route="route0" type="Car2" departLane="1" departPos="1000" departSpeed="0" color="51,255,255"/>
 
 
 </routes>
