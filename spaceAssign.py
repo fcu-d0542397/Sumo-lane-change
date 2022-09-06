@@ -422,7 +422,7 @@ while step < 40000:
                 frontSlideDistace = calSlideDistace(frontSpeed, 8, 1.5)
                 safetyDistace = 0
                 if traci.vehicle.getPosition(no)[0]-traci.vehicle.getPosition(veh1)[0] - 4 < 60:
-                    solve_value = calRiskBySpeed(nowSpeed, frontSpeed, 8, 1.5, 1)
+                    solve_value = calRiskBySpeed(frontSpeed, frontSpeed, 8, 1.5, 1)
                     if ":" in str(solve_value):
                         characters = "{,x:}"
                         tempString = str(solve_value)
@@ -438,10 +438,12 @@ while step < 40000:
                     print ("nowSpeed * 1.5: " + str(nowSpeed * 1.5))
                 if gap > 0:
                 #   if i > 0 and traci.vehicle.getPosition(no)[0]-traci.vehicle.getPosition(veh1)[0] < 40 and changeFlag[i] == 0:
-                    if i > 0 and gap + frontSlideDistace > (nowSpeed * 1.5)  and  gap - safetyDistace < 1 and safetyDistace < gap  and changeFlag[i] == 0:
+                    if i > 0 and gap + frontSlideDistace > (frontSpeed * 1.5)  and  gap - safetyDistace < 1 and safetyDistace < gap  and changeFlag[i] == 0:
                         if i % 2 == 0:
                             traci.vehicle.changeLane(veh1, 1, 300)
                             traci.vehicle.changeLane(veh, 1, 300)
+                            traci.vehicle.setSpeed(veh1, frontSpeed)
+                            traci.vehicle.setSpeed(veh, frontSpeed)
                             changeFlag[i] = 1
                             changeSpeedTime[i] = step + 150
                             stopChangeFlag = stopChangeFlag + 1
