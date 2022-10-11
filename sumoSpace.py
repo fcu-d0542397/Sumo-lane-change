@@ -35,9 +35,26 @@ space = []
 # 車間距離數量
 matrixLength = 0
 spaceMatrix = []
+fleetMatrix = []
+
+# 計算空間排序變數
+miniIndex = []
+miniIndexSpace = []
+miniIndexSpaceCount = []
+mappingStartEndSorting = []
 
 # 安全距離(舊)
 safeSpce = 5
+
+#重新計算Flag
+restartFlag = 0 
+
+# 新安全距離(跟車風險為1時)
+safeDistace = []
+selectdone = []
+
+#車隊車速
+fleetSpeed = [] 
 
 # 計算所需空間(舊)
 changeNeedSpace = np.zeros(10)
@@ -71,6 +88,15 @@ changeFlag = []
 # 開始切換速度的時間
 changeSpeedTime = []
 
+minSatiSpace = 0
+minSatirange = ""
+
+# 計算單個空間可以放幾台車
+spaceCarCount = []
+
+# 車子分配到那一個空間
+carAssignSpace = []
+
 # inital function start
 # 寫檔初始化
 def writeInit():
@@ -90,13 +116,28 @@ def writeInit():
     path = 'output3.txt'
     f3 = open(path, 'a')
 
-# 初始化車輛位置
+# 初始化車子分配空間
+def initCarAssign():
+    global carAssignSpace
+    for i in range(10):
+        carAssignSpace.append(-1)
+
+# 初始化車輛位置(不只位置)
 def initPosition():
+    global fleetPosition, otherPosition, fleetLandID, otherLandID, saftyDistace, fleetSpeed
     for i in range(11):
         fleetPosition.append(0)
         otherPosition.append(0)
         fleetLandID.append(-1)
         otherLandID.append(-1)
+        safeDistace.append(-1)
+        fleetSpeed.append(0)
+        selectdone.append(0)
+
+# old 換車道所需空間
+def staticChangeSpace():
+    for i in range(carNumber):
+        changeNeedSpace[i] = (i + 1) * (carLength + safeSpce)
 
 #初始化changeFlag  
 def changeInit():
@@ -108,6 +149,7 @@ def speedInit():
     for i in range(11):
         vehString3 = "veh"+str(i)
         traci.vehicle.setSpeed(vehString3, 20)
+    traci.vehicle.setSpeed("stop", 0)
 
 # 變換車道時間初始化
 def changeTime():
@@ -217,24 +259,55 @@ def getSpace():
 
 #取得車隊長度
 def getFleetLength():
-    fleetLength = 0 
-    for i in range(0, 11):
-        veh = "veh" + str(i)
-        veh2 = "veh" + str(i+1)
-        frontSpeed = traci.vehicle.getSpeed(veh)
-        nowSpeed = traci.vehicle.getSpeed(veh2)
-        notice = 0.1
-        solve_value = calRiskBySpeed(nowSpeed, frontSpeed, 8, notice, 1)
-        if ":" in str(solve_value):
-            characters = "{,x:}"
-            tempString = str(solve_value)
-        for j in range(len(characters)):
-            tempString = tempString.replace(characters[j], "")
-        saftyDistace = float(tempString)
-        fleetLength = fleetLength + saftyDistace
-        fleetLength = fleetLength + 4
-    fleetLast = fleetLength + safeSpce
+
+    # fleetLength = 0 
+    # for i in range(0, 10):
+    #     veh = "veh" + str(i)
+    #     veh2 = "veh" + str(i+1)
+    #     frontSpeed = traci.vehicle.getSpeed(veh)
+    #     nowSpeed = traci.vehicle.getSpeed(veh2)
+    #     notice = 0.1
+    #     solve_value = calRiskBySpeed(nowSpeed, frontSpeed, 8, notice, 1)
+    #     if ":" in str(solve_value):
+    #         characters = "{,x:}"
+    #         tempString = str(solve_value)
+    #     for j in range(len(characters)):
+    #         tempString = tempString.replace(characters[j], "")
+    #     saftyDistace = float(tempString)
+    #     fleetLength = fleetLength + saftyDistace
+    #     fleetLength = fleetLength + 4
+    # fleetLast = fleetLength + safeSpce
+    # return fleetLength
+    veh = "veh" + str(0)
+    veh2 = "veh" + str(10)
+    fleetLength = traci.vehicle.getPosition(veh)[0] - traci.vehicle.getPosition(veh2)[0] + 4
+    print(fleetLength);
     return fleetLength
+    
+# 計算取得安全距離
+def calculateSafeDistance():
+    global saftyDistace
+    for i in range(0, 10):
+        veh = "veh"+str(i)
+        veh2 = "veh"+str(i+1)
+        nowSpeed = traci.vehicle.getSpeed(veh2)
+        frontSpeed = traci.vehicle.getSpeed(veh)
+
+        if nowSpeed != fleetSpeed[i+1] or  frontSpeed != fleetSpeed[i]:
+            fleetSpeed[i+1] = nowSpeed
+            fleetSpeed[i] = frontSpeed
+            solve_value = calRiskBySpeed(nowSpeed, frontSpeed, 8, 0.1, 1)
+            if ":" in str(solve_value):
+                characters = "{,x:}"
+                tempString = str(solve_value)
+                for j in range(len(characters)):
+                    tempString = tempString.replace(characters[j], "")
+                safty= float(tempString)
+                safeDistace[i] = safty
+    print(safeDistace)
+    
+
+
 
 # 填滿矩陣空間
 def calMatrixSpace():
@@ -277,8 +350,136 @@ def calFitFleetSpace(fleetLast):
                 newSatisSpaceNumber.append(abs(i - j) + 1)
                 mappingStartEnd.append(startEndSpace[i][j])
     print(satisSpace)
-    satisSpace.clear()
     print("\n")
+
+# 空間排序
+def sortingSpace():
+    global minSatiSpace, minSatirange
+    minSatisSpaceNumber = min(newSatisSpaceNumber)
+    print(minSatisSpaceNumber)
+    minSatiSpace = 0
+    minSatirange = ""
+    for i in range(len(newSatisSpaceNumber)):
+        if newSatisSpaceNumber[i] == minSatisSpaceNumber:
+            if minSatiSpace == 0:
+                minSatiSpace = satisSpace[i]
+                minSatirange = mappingStartEnd[i]
+            elif minSatiSpace >satisSpace[i]:
+                minSatiSpace = satisSpace[i]
+                minSatirange = mappingStartEnd[i]
+    # print(minSatiSpace)
+    # print(minSatirange)
+    
+    
+
+
+
+    # while min(satisTmp) != 10000:
+    #     for i in range(len(satisTmp)):
+    #         if satisSpaceNumber[i] == min(satisTmp):
+    #             miniIndex.append(i)
+    #             miniIndexSpace.append(satisSpace[i])
+    #             mappingStartEndSorting.append(mappingStartEnd[i])
+    #             satisTmp[i] = 10000
+    # newSatisSpaceNumber.sort() 
+
+    # print(miniIndexSpace)
+    # print("\n")
+    # print(mappingStartEndSorting)
+    # print("\n")
+    # print(newSatisSpaceNumber)
+
+    # print(len(satisSpace))
+    
+    satisSpace.clear()
+    satisSpaceNumber.clear()
+    newSatisSpaceNumber.clear()
+    mappingStartEnd.clear()
+    satisTmp.clear()
+
+# 選擇最小的空間
+def sortingMiniChoose():
+    global restartFlag, minSatirange, spaceCarCount, matrixLength
+    chooseSpace = []
+    spaceCarCount.clear()
+    start, end = minSatirange.split("-")
+    # print("matrixLength: "+str(matrixLength))
+
+    if restartFlag == 0:
+        start = int(start)
+        end = int(end)
+    elif restartFlag == 1:
+        if int(end) + 1 > matrixLength - 1:
+            start = int(start) + 1
+            end = int(end)
+            minSatirange = str(start) + "-"+ str(end)
+        else:
+            start = int(start)
+            end = int(end) + 1
+            minSatirange = str(start) + "-"+ str(end)
+    restartFlag = 0
+
+    for i in range(start,end+1):
+        chooseSpace.append(space[i])
+    print(chooseSpace)
+    
+    # fleetMatrix
+    for i in range(len(chooseSpace)):
+        if countAll(spaceCarCount) > carNumber:
+            break
+        for j in range(10):
+
+            if start == end:
+                tmp = carNumber-(countAll(spaceCarCount))
+                spaceCarCount.append(tmp)
+                break
+                
+            elif chooseSpace[i] >= changeNeedSpace[j] and chooseSpace[i] < changeNeedSpace[j+1]:
+                if countAll(spaceCarCount)+(j+1) > carNumber:
+                    tmp = carNumber-(countAll(spaceCarCount))
+                    spaceCarCount.append(tmp)
+                    if tmp != 0:
+                        chooseSpace[i] = chooseSpace[i]-changeNeedSpace[tmp]
+                    break
+                else:
+                    spaceCarCount.append(j+1)
+                    chooseSpace[i] = chooseSpace[i]-changeNeedSpace[j]
+                    break
+    if(countAll(spaceCarCount) < carNumber):
+        restartFlag = 1;
+        sortingMiniChoose()
+    else:
+        print(minSatirange)
+        print(countAll(spaceCarCount))
+        print(spaceCarCount)
+    # print("dfssfdsf"+str(chooseSpace)
+
+# 計算array累加
+def countAll(list):
+    tmp = 0
+    for i in range(len(list)):
+        tmp = tmp + list[i]
+    return tmp
+
+# 分配車輛到指定空間
+def carFittingSpace():
+    start, end = minSatirange.split("-")
+    start = int(start)
+    end = int(end)
+    count = 0
+    whichCount = 0
+    for i in range(len(spaceCarCount)):
+        while count != spaceCarCount[i]:
+            carAssignSpace[whichCount] = i + start
+            whichCount = whichCount + 1
+            count = count + 1
+        count = 0
+    print(carAssignSpace)
+            
+        
+        
+
+        
 
 
 # 風險檢測
@@ -378,13 +579,54 @@ def riskFollowing():
 # normal python
 # 空間初始化
 def spaceInit():
-    global matrixLength, spaceMatrix, startEndSpace
+    global matrixLength, spaceMatrix, startEndSpace, fleetMatrix
     for i in range(10):
         space.append(0)
     # 空間矩陣初始化
     matrixLength = np.size(space)
     spaceMatrix = np.empty((matrixLength, matrixLength))
+    fleetMatrix = np.empty((matrixLength, matrixLength))
     startEndSpace = [["1" for _ in range(matrixLength)] for _ in range(matrixLength)]
+
+
+def fleetCalculatePosition():
+    vehPosition = traci.vehicle.getPosition("veh0")[0]
+    vehPosition2 = traci.vehicle.getPosition("veh10")[0]
+    allLength = abs(vehPosition - vehPosition2)+carLength
+    return allLength
+
+
+# 車隊所需空間大小
+def fleetCalculate():
+    global matrixLength, fleetMatrix
+    for i in range(matrixLength):
+        for j in range(matrixLength):
+            veh = "veh" + str(i)
+            veh1 = "veh" + str(j)
+            vehPosition = traci.vehicle.getPosition(veh)[0]
+            vehPosition1 = traci.vehicle.getPosition(veh1)[0]
+            if i == j:
+                fleetMatrix[i, j] = carLength + safeDistace[i]
+
+            elif i > j:
+                start = j
+                end = i
+                tmp = 0
+                for k in range(start,end+1):
+                    tmp = tmp + carLength + safeDistace[k]
+                fleetMatrix[i, j] = tmp
+
+            elif  i < j:
+                start = i
+                end = j
+                tmp = 0
+                for k in range(start,end+1):
+                    tmp = tmp + carLength + safeDistace[k]
+                fleetMatrix[i, j] = tmp
+                # fleetMatrix[i, j] = int(abs(vehPosition - vehPosition1) + carLength + safeSpce)
+    print (fleetMatrix)
+
+
 
 
 # changeNeedSpace = np.zeros(10)
@@ -510,7 +752,9 @@ def startSimulate():
     while step < 40000:
         traci.simulationStep()
         if step == 0:
+            staticChangeSpace()
             initPosition()
+            initCarAssign()
             changeInit()
             speedInit()
             changeTime()
@@ -521,11 +765,17 @@ def startSimulate():
             spaceInit()
 
         if step > 0:
+            calculateSafeDistance()
             getAllPosition()
             getAllLaneID()
             getSpace()
             calMatrixSpace()
-            calFitFleetSpace(getFleetLength())
+            fleetCalculate()
+            calFitFleetSpace(fleetMatrix[0, 9])
+            # calFitFleetSpace(fleetCalculatePosition())
+            sortingSpace()
+            sortingMiniChoose()
+            carFittingSpace()
             riskFollowing()
             
 
@@ -555,11 +805,11 @@ def startSimulate():
                             safetyDistace = float(tempString)
                     gap = traci.vehicle.getPosition(no)[0]-traci.vehicle.getPosition(veh1)[0] - 4
 
-                    if i == 10:
-                        print ("gap: " + str(gap))
-                        print ("safetyDistace: " + str(safetyDistace))
-                        print ("gap + frontSlideDistace: " + str(gap + frontSlideDistace))
-                        print ("nowSpeed * 1.5: " + str(nowSpeed * 1.5))
+                    # if i == 10:
+                    #     print ("gap: " + str(gap))
+                    #     print ("safetyDistace: " + str(safetyDistace))
+                    #     print ("gap + frontSlideDistace: " + str(gap + frontSlideDistace))
+                    #     print ("nowSpeed * 1.5: " + str(nowSpeed * 1.5))
                     if gap > 0:
                     #   if i > 0 and traci.vehicle.getPosition(no)[0]-traci.vehicle.getPosition(veh1)[0] < 40 and changeFlag[i] == 0:
                         if i > 0 and gap + frontSlideDistace > (frontSpeed * 1.5)  and  gap - safetyDistace < 1 and safetyDistace < gap  and changeFlag[i] == 0:
