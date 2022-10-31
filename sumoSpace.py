@@ -43,6 +43,10 @@ miniIndexSpace = []
 miniIndexSpaceCount = []
 mappingStartEndSorting = []
 
+# 車輛與障礙物之距離
+carCrash = []
+carCrashTime = []
+
 # 安全距離(舊)
 safeSpce = 5
 
@@ -121,6 +125,8 @@ def initCarAssign():
     global carAssignSpace
     for i in range(10):
         carAssignSpace.append(-1)
+        carCrash.append(0)
+        carCrashTime.append(0)
 
 # 初始化車輛位置(不只位置)
 def initPosition():
@@ -241,6 +247,7 @@ def fleetNoChange():
     for i in range(11):
         veh = "veh" + str(i)
         traci.vehicle.setLaneChangeMode(veh, 0b000000000000)
+    traci.vehicle.setLaneChangeMode("stop", 0b000000000000)
 
 # 設定車隊車輛速度模式
 def speedModeInit():
@@ -296,6 +303,9 @@ def calculateSafeDistance():
         if nowSpeed != fleetSpeed[i+1] or  frontSpeed != fleetSpeed[i]:
             fleetSpeed[i+1] = nowSpeed
             fleetSpeed[i] = frontSpeed
+            print("nowSpeed: "+str(nowSpeed))
+            print("frontSpeed: "+str(frontSpeed))
+            
             solve_value = calRiskBySpeed(nowSpeed, frontSpeed, 8, 0.1, 1)
             if ":" in str(solve_value):
                 characters = "{,x:}"
@@ -303,7 +313,10 @@ def calculateSafeDistance():
                 for j in range(len(characters)):
                     tempString = tempString.replace(characters[j], "")
                 safty= float(tempString)
-                safeDistace[i] = safty
+                if safty < 1:
+                    safeDistace[i] = 1
+                else:
+                    safeDistace[i] = safty
     print(safeDistace)
     
 
@@ -340,6 +353,7 @@ def calMatrixSpace():
 
 # 空間符合車隊長度
 def calFitFleetSpace(fleetLast):
+    print("fleetLast: "+str(fleetLast))
     for i in range(matrixLength):
         for j in range(matrixLength):
             if spaceMatrix[i, j] > fleetLast + 0 * (carLength + safeSpce):
@@ -477,7 +491,17 @@ def carFittingSpace():
     print(carAssignSpace)
             
         
-        
+# 計算車隊車輛與障礙物之距離
+def calCarAndCrash():
+    global carCrash, fleetPosition, carCrashTime
+    crashPosition = traci.vehicle.getPosition("stop")[0]
+    for i in range(10):
+        carCrash[i] = crashPosition - fleetPosition[i] - carLength
+        carCrashTime[i] = carCrash[i] / fleetSpeed[i]
+
+    print("crash: " +str(carCrash))
+    print("crasTime: "+ str(carCrashTime))
+
 
         
 
@@ -624,7 +648,7 @@ def fleetCalculate():
                     tmp = tmp + carLength + safeDistace[k]
                 fleetMatrix[i, j] = tmp
                 # fleetMatrix[i, j] = int(abs(vehPosition - vehPosition1) + carLength + safeSpce)
-    print (fleetMatrix)
+    print ('%1.2f' %(fleetMatrix[0, 9]))
 
 
 
@@ -764,9 +788,10 @@ def startSimulate():
             writeInit()
             spaceInit()
 
-        if step > 0:
+        if step > 100:
             calculateSafeDistance()
             getAllPosition()
+            calCarAndCrash()
             getAllLaneID()
             getSpace()
             calMatrixSpace()
@@ -784,7 +809,7 @@ def startSimulate():
                 vehString = "veh"+str(i+1)
                 traci.vehicle.setSpeed(vehString, 30)
 
-        if step > 1500 and stopChangeFlag < 11:
+        if step > 1500 and stopChangeFlag < 11 and false:
             for i in range(11):
                 if i-1 >= 0:
                     veh = "veh" + str(i)
