@@ -9,6 +9,6 @@
 <end value = "5000"/>
 </time>
 <processing>
-    <lanechange.duration value="3"/>
+    <lanechange.duration value="1.5"/>
 </processing>
 </configuration>
