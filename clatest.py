@@ -27,7 +27,7 @@ def calACCSpeedDiff(nowSpeed, frontSpeed,t):
     return solve_value
 
 
-print(calRiskBySpeed(1,10,8,1.5,1))
+print(calRiskBySpeed(30,30,8,1.5,1))
 
 
 # 3.2833999999852495

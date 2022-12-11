@@ -20,9 +20,9 @@ allAre1 = 0
 
 # 開檔案
 f = 0
-f2= 0
+f2 = 0
 f3 = 0
-f4 =0 
+f4 = 0
 
 # 停止換車道參數
 stopChangeFlag = 0
@@ -49,26 +49,26 @@ carCrash = []
 carCrashTime = []
 
 # 安全距離(舊)
-safeSpce = 5
+safeSpce = 3
 
-#重新計算Flag
-restartFlag = 0 
+# 重新計算Flag
+restartFlag = 0
 
 # 新安全距離(跟車風險為1時)
 safeDistace = []
 selectdone = []
 
-#車隊車速
-fleetSpeed = [] 
+# 車隊車速
+fleetSpeed = []
 
 # 計算所需空間(舊)
 changeNeedSpace = np.zeros(10)
 
-#滿足空間 
+# 滿足空間
 satisSpace = []
 satisTmp = []
 
-#滿足空間號碼 
+# 滿足空間號碼
 satisSpaceNumber = []
 newSatisSpaceNumber = []
 
@@ -120,8 +120,10 @@ recoverSpeedFlag = 0
 
 # inital function start
 # 寫檔初始化
+
+
 def writeInit():
-    global f, f2,f3,f4
+    global f, f2, f3, f4
     os.remove("output.txt")
     print("File removed successfully")
     path = 'output.txt'
@@ -143,6 +145,8 @@ def writeInit():
     f4 = open(path, 'a')
 
 # 初始化車子分配空間
+
+
 def initCarAssign():
     global carAssignSpace
     for i in range(10):
@@ -152,6 +156,8 @@ def initCarAssign():
         decArray.append(-500)
 
 # 初始化車輛位置(不只位置)
+
+
 def initPosition():
     global fleetPosition, otherPosition, fleetLandID, otherLandID, saftyDistace, fleetSpeed
     for i in range(11):
@@ -164,23 +170,31 @@ def initPosition():
         selectdone.append(0)
 
 # old 換車道所需空間
+
+
 def staticChangeSpace():
     for i in range(carNumber):
         changeNeedSpace[i] = (i + 1) * (carLength + safeSpce)
 
-#初始化changeFlag  
+# 初始化changeFlag
+
+
 def changeInit():
     for i in range(11):
         changeFlag.append(0)
 
 # 車隊車速初始化
+
+
 def speedInit():
-    for i in range(11):
-        vehString3 = "veh"+str(i)
-        traci.vehicle.setSpeed(vehString3, 20)
+    # for i in range(11):
+    #     vehString3 = "veh"+str(i)
+    #     traci.vehicle.setSpeed(vehString3, 20)
     traci.vehicle.setSpeed("stop", 0)
 
 # 變換車道時間初始化
+
+
 def changeTime():
     for i in range(11):
         changeSpeedTime.append(-1)
@@ -189,23 +203,31 @@ def changeTime():
 
 # function start
 # 計算跟車風險(跟車加速度)
+
+
 def calFollowSpeed(nowSpeed, frontSpeed, distance, notice, brakeMax):
     follow = (nowSpeed**2 * brakeMax) / (frontSpeed**2 +
                                          2 * brakeMax * (distance - nowSpeed * notice))
     return follow
 
 # 計算跟車安全距離
+
+
 def calRiskBySpeed(nowSpeed, frontSpeed, maxBrake, notice, expect):
     solve_value = solve([((nowSpeed**2 * maxBrake)/(frontSpeed**2 +
                         2*maxBrake*(x - nowSpeed * notice)) / maxBrake) - expect], [x])
     return solve_value
 
 # 計算緊急煞車滑行距離
+
+
 def calSlideDistace(speed, maxBrake, time):
     slideDistace = speed * time - 0.5 * maxBrake * (time**2)
     return slideDistace
 
 # 取得車輛行駛車道
+
+
 def getAllLaneID():
     for i in range(11):
         veh = "veh" + str(i)
@@ -214,6 +236,8 @@ def getAllLaneID():
         otherLandID[i] = traci.vehicle.getLaneIndex(no)
 
 # 取得車輛位置
+
+
 def getAllPosition():
     for i in range(11):
         veh = "veh" + str(i)
@@ -222,6 +246,8 @@ def getAllPosition():
         otherPosition[i] = traci.vehicle.getPosition(no)[0]
 
 # 計算最近跟車車輛
+
+
 def calClosestCar(now, index):
     # 當前車輛車道位置
     landID = traci.vehicle.getLaneIndex(now)
@@ -260,12 +286,16 @@ def calClosestCar(now, index):
     return [fleetOrNot, minIndex]
 
 # 設定非車隊換車道模式
+
+
 def noNoChange():
     for i in range(12):
         no = "no" + str(i)
         traci.vehicle.setLaneChangeMode(no, 0b000000000000)
 
 # 設定車隊換車道模式
+
+
 def fleetNoChange():
     for i in range(11):
         veh = "veh" + str(i)
@@ -273,6 +303,8 @@ def fleetNoChange():
     traci.vehicle.setLaneChangeMode("stop", 0b000000000000)
 
 # 設定車隊車輛速度模式
+
+
 def speedModeInit(speedMode):
     # speedMode = 0
     for i in range(11):
@@ -280,17 +312,22 @@ def speedModeInit(speedMode):
         traci.vehicle.setSpeedMode(veh, speedMode)
 
 # 空間放入矩陣
+
+
 def getSpace():
     for i in range(10):
         no = "no"+str(i)
         no2 = "no"+str(i+1)
-        gap = traci.vehicle.getPosition(no)[0] - traci.vehicle.getPosition(no2)[0]
+        gap = traci.vehicle.getPosition(
+            no)[0] - traci.vehicle.getPosition(no2)[0]
         space[i] = gap
 
-#取得車隊長度
+# 取得車隊長度
+
+
 def getFleetLength():
 
-    # fleetLength = 0 
+    # fleetLength = 0
     # for i in range(0, 10):
     #     veh = "veh" + str(i)
     #     veh2 = "veh" + str(i+1)
@@ -310,11 +347,14 @@ def getFleetLength():
     # return fleetLength
     veh = "veh" + str(0)
     veh2 = "veh" + str(10)
-    fleetLength = traci.vehicle.getPosition(veh)[0] - traci.vehicle.getPosition(veh2)[0] + 4
-    print(fleetLength);
+    fleetLength = traci.vehicle.getPosition(
+        veh)[0] - traci.vehicle.getPosition(veh2)[0] + 4
+    print(fleetLength)
     return fleetLength
-    
+
 # 計算取得安全距離
+
+
 def calculateSafeDistance():
     global saftyDistace
     for i in range(0, 10):
@@ -323,29 +363,31 @@ def calculateSafeDistance():
         nowSpeed = traci.vehicle.getSpeed(veh2)
         frontSpeed = traci.vehicle.getSpeed(veh)
 
-        if nowSpeed != fleetSpeed[i+1] or  frontSpeed != fleetSpeed[i]:
+        if nowSpeed != fleetSpeed[i+1] or frontSpeed != fleetSpeed[i]:
             fleetSpeed[i+1] = nowSpeed
             fleetSpeed[i] = frontSpeed
             # print("nowSpeed: "+str(nowSpeed))
             # print("frontSpeed: "+str(frontSpeed))
-            
+
             solve_value = calRiskBySpeed(nowSpeed, frontSpeed, 8, 0.1, 1)
             if ":" in str(solve_value):
                 characters = "{,x:}"
                 tempString = str(solve_value)
                 for j in range(len(characters)):
                     tempString = tempString.replace(characters[j], "")
-                safty= float(tempString)
+                safty = float(tempString)
                 if safty < 1:
                     safeDistace[i] = 1
                 else:
                     safeDistace[i] = safty
     print(safeDistace)
 
-#移動車隊車輛位置 
+# 移動車隊車輛位置
+
+
 def moveVehiclePosition():
     temp1 = 0
-    temp2 = 0 
+    temp2 = 0
     for i in range(11):
         veh = "veh"+str(i)
         if i == 0:
@@ -361,45 +403,55 @@ def moveVehiclePosition():
             traci.vehicle.moveToXY(veh, "1to2", 0, temp1, temp2)
 
 
-
 # 填滿矩陣空間
 def calMatrixSpace():
     global matrixLength
     for i in range(matrixLength):
         for j in range(matrixLength):
             if i == j:
-                spaceMatrix[i,j] = space[i]
+                spaceMatrix[i, j] = space[i]
                 startEndSpace[i][j] = str(i) + "-" + str(j)
             else:
                 if i > j:
                     start = j
                     end = i
                     tmp = 0
-                    for k in range(start,end+1):
+                    for k in range(start, end+1):
                         tmp = tmp + space[k]
-                    spaceMatrix[i,j] = tmp
+                    spaceMatrix[i, j] = tmp
                     startEndSpace[i][j] = str(start) + "-" + str(end)
                     tmp = 0
                 else:
                     start = i
                     end = j
                     tmp = 0
-                    for k in range(start,end+1):
+                    for k in range(start, end+1):
                         tmp = tmp + space[k]
-                    spaceMatrix[i,j] = tmp
+                    spaceMatrix[i, j] = tmp
                     startEndSpace[i][j] = str(start) + "-" + str(end)
                     tmp = 0
     # print(spaceMatrix)
 
 # 空間符合車隊長度
+
+
 def calFitFleetSpace(fleetLast):
     print("fleetLast: "+str(fleetLast))
+    frontSpeed = traci.vehicle.getSpeed("no0")
+    solve_value = calRiskBySpeed(frontSpeed, frontSpeed, 8, 1.5, 1)
+    if ":" in str(solve_value):
+        characters = "{,x:}"
+        tempString = str(solve_value)
+        for j in range(len(characters)):
+            tempString = tempString.replace(characters[j], "")
+        safty = float(tempString)
+
     for i in range(matrixLength):
         for j in range(matrixLength):
             if spaceMatrix[i, j] > fleetLast + 0 * (carLength + safeSpce):
                 # print(spaceMatrix[i, j])
                 start, end = startEndSpace[i][j].split("-")
-                if(otherPosition[int(start)] > fleetPosition[0]):
+                if(otherPosition[int(start)] - safty > fleetPosition[0]):
                     satisSpace.append(5000)
                 else:
                     satisSpace.append(spaceMatrix[i, j])
@@ -412,26 +464,45 @@ def calFitFleetSpace(fleetLast):
     # print("\n")
 
 # 空間排序
+
+
 def sortingSpace():
     global minSatiSpace, minSatirange
+    no = "no0"
+    frontSpeed = traci.vehicle.getSpeed(no)
+    safty = 0
+    solve_value = calRiskBySpeed(frontSpeed, frontSpeed, 8, 1.5, 1)
+    if ":" in str(solve_value):
+        characters = "{,x:}"
+        tempString = str(solve_value)
+        for j in range(len(characters)):
+            tempString = tempString.replace(characters[j], "")
+        safty = float(tempString)
+
     minSatisSpaceNumber = min(newSatisSpaceNumber)
     print("minSatisSpaceNumber:"+str(minSatisSpaceNumber))
-    minSatiSpace = 0
-    minSatirange = ""
-    for i in range(len(newSatisSpaceNumber)):
-        if newSatisSpaceNumber[i] == minSatisSpaceNumber:
-            if minSatiSpace == 0:
-                minSatiSpace = satisSpace[i]
-                minSatirange = mappingStartEnd[i]
-            elif minSatiSpace >satisSpace[i]:
-                minSatiSpace = satisSpace[i]
-                minSatirange = mappingStartEnd[i]
+    for i in range(10):
+        no = "no"+str(i)
+        if fleetPosition[0] > otherPosition[i] - safty:
+            minSatisSpaceNumber = i
+            # print("sdfdsdddsfsd:"+str(i))
+            break
+    minSatirange = str(minSatisSpaceNumber)+"-"+str(minSatisSpaceNumber)
+    minSatiSpace = satisSpace[minSatisSpaceNumber]
+
+    # minSatiSpace = 0
+    # minSatirange = ""
+    # for i in range(len(newSatisSpaceNumber)):
+    #     if newSatisSpaceNumber[i] == minSatisSpaceNumber:
+    #         if minSatiSpace == 0:
+    #             minSatiSpace = satisSpace[i]
+    #             minSatirange = mappingStartEnd[i]
+    #         elif minSatiSpace >satisSpace[i]:
+    #             minSatiSpace = satisSpace[i]
+    #             minSatirange = mappingStartEnd[i]
+
     # print(minSatiSpace)
     # print(minSatirange)
-    
-    
-
-
 
     # while min(satisTmp) != 10000:
     #     for i in range(len(satisTmp)):
@@ -440,7 +511,7 @@ def sortingSpace():
     #             miniIndexSpace.append(satisSpace[i])
     #             mappingStartEndSorting.append(mappingStartEnd[i])
     #             satisTmp[i] = 10000
-    # newSatisSpaceNumber.sort() 
+    # newSatisSpaceNumber.sort()
 
     # print(miniIndexSpace)
     # print("\n")
@@ -449,7 +520,7 @@ def sortingSpace():
     # print(newSatisSpaceNumber)
 
     # print(len(satisSpace))
-    
+
     satisSpace.clear()
     satisSpaceNumber.clear()
     newSatisSpaceNumber.clear()
@@ -457,6 +528,8 @@ def sortingSpace():
     satisTmp.clear()
 
 # 選擇最小的空間
+
+
 def sortingMiniChoose():
     global restartFlag, minSatirange, spaceCarCount, matrixLength
     chooseSpace = []
@@ -488,28 +561,30 @@ def sortingMiniChoose():
     elif restartFlag == 1:
         if int(end) + 1 > matrixLength - 1:
             print(minSatirange)
-            start = int(start)- 1
+            start = int(start) - 1
             end = int(end)
-            minSatirange = str(start) + "-"+ str(end)
+            minSatirange = str(start) + "-" + str(end)
             print(minSatirange)
         else:
             print(minSatirange)
             start = int(start)
             end = int(end) + 1
-            minSatirange = str(start) + "-"+ str(end)
+            minSatirange = str(start) + "-" + str(end)
             print(minSatirange)
 
     restartFlag = 0
-    for i in range(start,end+1):
+    for i in range(start, end+1):
         chooseSpace.append(space[i])
     print("asdasdasd: "+str(chooseSpace))
-    
-    
+
     # fleetMatrix
     for i in range(len(chooseSpace)):
         if countAll(spaceCarCount) > carNumber:
             break
         for j in range(10):
+            # print("i: "+str(i))
+            # print("j: "+str(j))
+            # print("j+1: "+str(j+1))
 
             if start == end:
                 # tmp = carNumber-(countAll(spaceCarCount))
@@ -518,7 +593,7 @@ def sortingMiniChoose():
                 # print("j+30: " +str(changeNeedSpace[j]+(30)))
                 # print("j+1+30: " +str(changeNeedSpace[j+1]+(30)))
                 # print("changei: : " +str(chooseSpace[i]))
-                
+
                 # if chooseSpace[i] >= changeNeedSpace[j]+(30) and chooseSpace[i] < changeNeedSpace[j+1]+(30):
                 #     if countAll(spaceCarCount)+(j+1) > carNumber:
                 #         tmp = carNumber-(countAll(spaceCarCount))
@@ -533,8 +608,17 @@ def sortingMiniChoose():
                 #             now = now + tmp
                 restartFlag = 1
                 break
-                
-            elif chooseSpace[i] >= changeNeedSpace[j]+(safty*2) and chooseSpace[i] < changeNeedSpace[j+1]+(safty*2):
+
+                # print("i: "+str(i))
+                # print("j: "+str(j))
+                # print("j+1: "+str(j+1))
+                # print("i: "+str(i))
+
+            elif j+1 < 10 and chooseSpace[i] >= changeNeedSpace[j]+(safty*2) - safeSpce and chooseSpace[i] < changeNeedSpace[j+1]+(safty*2) - safeSpce:
+                print("number: "+str(j))
+                print(changeNeedSpace[j]+(safty*2))
+                print("number: "+str(j+1))
+                print(changeNeedSpace[j+1]+(safty*2))
                 if countAll(spaceCarCount)+(j+1) > carNumber:
                     tmp = carNumber-(countAll(spaceCarCount))
                     spaceCarCount.append(tmp)
@@ -546,7 +630,7 @@ def sortingMiniChoose():
                         groupChangeFlag.append(0)
                         groupSafty.append(0)
                         now = now + tmp
-                    else :
+                    else:
                         groupArray.append(now)
                         groupChangeArray.append(0)
                         groupChangeSpeedUp.append(0)
@@ -555,7 +639,8 @@ def sortingMiniChoose():
                         groupSafty.append(0)
                         now = now + tmp
                     if tmp != 0:
-                        chooseSpace[i] = chooseSpace[i]-changeNeedSpace[tmp]-(safty*2)
+                        chooseSpace[i] = chooseSpace[i] - \
+                            changeNeedSpace[tmp]-(safty*2)
                     break
                 else:
                     spaceCarCount.append(j+1)
@@ -567,7 +652,7 @@ def sortingMiniChoose():
                         groupChangeFlag.append(0)
                         groupSafty.append(0)
                         now = now + j+1
-                    else :
+                    else:
                         groupArray.append(now)
                         groupChangeArray.append(0)
                         groupChangeTime.append(0)
@@ -576,7 +661,8 @@ def sortingMiniChoose():
                         groupSafty.append(0)
                         now = now + j+1
 
-                    chooseSpace[i] = chooseSpace[i]-changeNeedSpace[j]-(safty*2)
+                    chooseSpace[i] = chooseSpace[i] - \
+                        changeNeedSpace[j]-(safty*2)
                     break
     print("dsdsdsssqq:"+str(countAll(spaceCarCount)))
     print("dsdsdsssqq:"+str(carNumber))
@@ -584,8 +670,8 @@ def sortingMiniChoose():
         print("countAll: "+str(countAll(spaceCarCount)))
         print("carNumber: "+str(carNumber))
         # print(carNumber)
-        
-        restartFlag = 1;
+
+        restartFlag = 1
         sortingMiniChoose()
     else:
         print(minSatirange)
@@ -597,6 +683,8 @@ def sortingMiniChoose():
     # print("dfssfdsf"+str(chooseSpace)
 
 # 計算array累加
+
+
 def countAll(list):
     tmp = 0
     for i in range(len(list)):
@@ -604,6 +692,8 @@ def countAll(list):
     return tmp
 
 # 分配車輛到指定空間
+
+
 def carFittingSpace():
     start, end = minSatirange.split("-")
     start = int(start)
@@ -619,6 +709,8 @@ def carFittingSpace():
     print(carAssignSpace)
 
 # 換車道分配
+
+
 def distributeSpace():
     global decStopCal, decStopFlag
     start, end = minSatirange.split("-")
@@ -636,54 +728,62 @@ def distributeSpace():
                 tempString = tempString.replace(characters[j], "")
             safty = float(tempString)
             groupSafty[i] = safty
-        timeDec = (stopPosition - 4 - fleetPosition[groupArray[i]]) /  fleetSpeed[groupArray[i]]
+        timeDec = (stopPosition - 4 -
+                   fleetPosition[groupArray[i]]) / fleetSpeed[groupArray[i]]
         timeDec = timeDec - 3
         print("time: "+str(timeDec))
         # timeDec2 = fleetSpeed[groupArray[i]] / 8
         # timeDec = timeDec * 0.5 + timeDec2 * 0.5
         # print("time: "+str(timeDec))
 
-        if i==0:
+        if i == 0:
             print("otherPosition: "+str(otherPosition[start + i]))
             print("fleetPosition: "+str(fleetPosition[groupArray[i]]))
             print("groupSafty: "+str(groupSafty[i]))
             # print("otherPosition: "+str(otherPosition[start + i]-fleetPosition[groupArray[i]] +4 +groupSafty[i]))
 
-        if timeDec !=0:
+        if timeDec != 0:
             # dec = ((fleetPosition[groupArray[i]] - otherPosition[start + i] - safty) / ((fleetSpeed[groupArray[i]] - frontSpeed)* timeDec)) * 2 / timeDec
             # dec = 2 * ((fleetPosition[groupArray[i]] - otherPosition[start + i] - safty) - ((fleetSpeed[groupArray[i]] - frontSpeed)* timeDec)) /  (timeDec ** 2)
-            dec = -((otherPosition[start + i]-fleetPosition[groupArray[i]] + 4 - groupSafty[i]) - ((fleetSpeed[groupArray[i]] - frontSpeed) * timeDec)) /  (timeDec ** 2 * 0.5)
-            print ("dec: "+str(dec))
+            dec = -((otherPosition[start + i]-fleetPosition[groupArray[i]] + 4 - groupSafty[i]) - (
+                (fleetSpeed[groupArray[i]] - frontSpeed) * timeDec)) / (timeDec ** 2 * 0.5)
+            print("dec: "+str(dec))
+            if dec > 8:
+                dec = 8
             decArray[i] = dec
             if dec > 0:
                 if i == len(groupArray) - 1:
                     for j in range(groupArray[i], 10):
                         veh = "veh" + str(j)
-                        if traci.vehicle.getSpeed(veh) -dec/100 > 0:
-                            traci.vehicle.setSpeed(veh, traci.vehicle.getSpeed(veh) - dec/100)
-                        else :
+                        if traci.vehicle.getSpeed(veh) - dec/100 > 0:
+                            traci.vehicle.setSpeed(
+                                veh, traci.vehicle.getSpeed(veh) - dec/100)
+                        else:
                             traci.vehicle.setSpeed(veh, 0)
-                            
+
                         # traci.vehicle.setApparentDecel(veh, dec)
                         # print(str(j)+": "+str(traci.vehicle.getSpeed(veh)))
                 else:
                     for j in range(groupArray[i], groupArray[i+1]):
                         veh = "veh" + str(j)
-                        if traci.vehicle.getSpeed(veh) -dec /100 > 0:
-                            traci.vehicle.setSpeed(veh, traci.vehicle.getSpeed(veh) - dec/100)
-                        else :
+                        if traci.vehicle.getSpeed(veh) - dec / 100 > 0:
+                            traci.vehicle.setSpeed(
+                                veh, traci.vehicle.getSpeed(veh) - dec/100)
+                        else:
                             traci.vehicle.setSpeed(veh, 0)
                         # traci.vehicle.setApparentDecel(veh, dec)
                         # print(str(j)+": "+str(traci.vehicle.getSpeed(veh)))
 
     for i in range(len(groupArray)):
-        if decArray[i] > 0 :
+        if decArray[i] > 0:
             decStopCal = decStopCal + 1
         if decStopCal == len(groupArray):
             decStopFlag = 1
     decStopCal = 0
 
 # 持續減速
+
+
 def countiDecGroup():
     global decStopCal, decStopFlag
     # print(minSatirange)
@@ -698,7 +798,8 @@ def countiDecGroup():
                 for j in range(groupArray[i], 10):
                     veh = "veh" + str(j)
                     if traci.vehicle.getSpeed(veh) - decArray[i]/100 > 0:
-                        traci.vehicle.setSpeed(veh, traci.vehicle.getSpeed(veh) - decArray[i]/100)
+                        traci.vehicle.setSpeed(
+                            veh, traci.vehicle.getSpeed(veh) - decArray[i]/100)
                     else:
                         traci.vehicle.setSpeed(veh, 0)
                     # traci.vehicle.setApparentDecel(veh, dec)
@@ -707,14 +808,17 @@ def countiDecGroup():
                 # print("dec "+str(i)+": "+str(decArray[i]))
                 for j in range(groupArray[i], groupArray[i+1]):
                     veh = "veh" + str(j)
-                    if traci.vehicle.getSpeed(veh) -decArray[i]/100 > 0:
-                        traci.vehicle.setSpeed(veh, traci.vehicle.getSpeed(veh) - decArray[i]/100)
+                    if traci.vehicle.getSpeed(veh) - decArray[i]/100 > 0:
+                        traci.vehicle.setSpeed(
+                            veh, traci.vehicle.getSpeed(veh) - decArray[i]/100)
                     else:
                         traci.vehicle.setSpeed(veh, 0)
                     # traci.vehicle.setApparentDecel(veh, dec)
                     print(str(j)+": "+str(traci.vehicle.getSpeed(veh)))
-    
+
 # 檢查空間與車隊距離
+
+
 def spaceFleetClose():
     global step
     start, end = minSatirange.split("-")
@@ -739,44 +843,49 @@ def spaceFleetClose():
                     tempString = tempString.replace(characters[j], "")
                 safty = float(tempString)
                 groupSafty[i] = safty
-                
+
         # print(abs(otherPosition[start+i] - fleetPosition[groupArray[i]]-groupSafty[i])<1)
         # print(abs(otherPosition[start+i] - fleetPosition[groupArray[i]]-groupSafty[i])<1)
         # print(abs(otherPosition[start+i] - fleetPosition[groupArray[i]]-groupSafty[i])<1)
         # print(abs(otherPosition[start+i] - fleetPosition[groupArray[i]]-groupSafty[i])<1)
-        
+
         # if fleetPosition[groupArray[i]]>0:
         #     nowSpeed*1.5
-        
-        if i == len(groupArray) - 1 :
 
-            if fleetPosition[groupArray[i]] < otherPosition[start + i] and abs(otherPosition[start+i] - fleetPosition[groupArray[i]]-groupSafty[i]) < (frontSpeed2-nowSpeed2)*1.5 and groupChangeArray[i] == 0 and groupSafty[i] > 0:
+        if i == len(groupArray) - 1:
+
+            # if fleetPosition[groupArray[i]] < otherPosition[start + i] and abs(otherPosition[start+i]- 4 - fleetPosition[groupArray[i]]-groupSafty[i]) < (frontSpeed2-nowSpeed2)*5+((frontSpeed2-nowSpeed2)/6)*(frontSpeed2-nowSpeed2) and groupChangeArray[i] == 0 and groupSafty[i] > 0:
+            if abs(otherPosition[start+i] - 4 - fleetPosition[groupArray[i]]-groupSafty[i]) < (frontSpeed2-nowSpeed2)*1.5 and groupChangeArray[i] == 0 and groupSafty[i] > 0:
                 # print("safty: "+str(groupSafty[i]))
                 groupChangeTime[i] = step
                 for j in range(groupArray[i], 10):
                     veh = "veh" + str(j)
-                    traci.vehicle.changeLane(veh, 1, 150) 
+                    traci.vehicle.changeLane(veh, 1, 300)
                     # traci.vehicle.setSpeed(veh, 10)
                     groupChangeArray[i] = 1
         else:
             # abs(otherPosition[start+i] - fleetPosition[groupArray[i]]) < 3
-            if fleetPosition[groupArray[i]] < otherPosition[start+i] and abs(otherPosition[start+i] - fleetPosition[groupArray[i]]-groupSafty[i]) < (frontSpeed2-nowSpeed2)*1.5 and groupChangeArray[i] == 0 and groupSafty[i] > 0:
+
+            # if fleetPosition[groupArray[i]] < otherPosition[start+i] and abs(otherPosition[start+i] - 4 - fleetPosition[groupArray[i]]-groupSafty[i]) < (frontSpeed2-nowSpeed2)*5+((frontSpeed2-nowSpeed2)/6)*(frontSpeed2-nowSpeed2) and groupChangeArray[i] == 0 and groupSafty[i] > 0:
+            if abs(otherPosition[start+i] - 4 - fleetPosition[groupArray[i]] - groupSafty[i]) < (frontSpeed2-nowSpeed2)*1.5 and groupChangeArray[i] == 0 and groupSafty[i] > 0:
                 groupChangeTime[i] = step
                 for j in range(groupArray[i], groupArray[i+1]):
                     veh = "veh" + str(j)
-                    traci.vehicle.changeLane(veh, 1, 150)
+                    traci.vehicle.changeLane(veh, 1, 300)
                     # traci.vehicle.setSpeed(veh, 10)
                     groupChangeArray[i] = 1
 
 # 換完車道回復車速
+
+
 def laneChangeSpeedRecover():
-    global step,recoverSpeedFlag, start, end
+    global step, recoverSpeedFlag, start, end
     start, end = minSatirange.split("-")
     start = int(start)
     end = int(end)
     for i in range(len(groupArray)):
         if i == len(groupArray) - 1 and groupChangeArray[i] == 1:
-            if groupChangeArray[i] == 1 and step >= groupChangeTime[i] +150  and groupChangeFlag[i] == 0 :
+            if groupChangeArray[i] == 1 and step >= groupChangeTime[i] + 0 and groupChangeFlag[i] == 0:
                 # if  groupChangeSpeedUp[i] == 0:
                 #     frontSpeed = traci.vehicle.getSpeed("no"+str(start+i))
                 #     groupChangeSpeedUp[i] = otherPosition[start+i] - fleetPosition[groupArray[i]] / (frontSpeed - fleetSpeed[groupArray[i]])
@@ -792,7 +901,7 @@ def laneChangeSpeedRecover():
                         traci.vehicle.setSpeed(veh, fleetSpeed[j] + 6 / 100)
                 # groupChangeFlag[i] = 1
         elif groupChangeArray[i] == 1:
-            if groupChangeArray[i] == 1 and step >= groupChangeTime[i] +150  and groupChangeFlag[i] == 0 :
+            if groupChangeArray[i] == 1 and step >= groupChangeTime[i] + 0 and groupChangeFlag[i] == 0:
                 # if  groupChangeSpeedUp[i] == 0:
                 #     frontSpeed = traci.vehicle.getSpeed("no"+str(start+i))
                 #     groupChangeSpeedUp[i] = otherPosition[start+i] - fleetPosition[groupArray[i]] / (frontSpeed - fleetSpeed[groupArray[i]])
@@ -805,15 +914,10 @@ def laneChangeSpeedRecover():
                         groupChangeFlag[i] = 1
                     else:
                         traci.vehicle.setSpeed(veh, fleetSpeed[j] + 6 / 100)
-                         
+
                 # groupChangeFlag[i] = 1
-    
 
 
-
-
-            
-        
 # 計算車隊車輛與障礙物之距離
 def calCarAndCrash():
     global carCrash, fleetPosition, carCrashTime
@@ -825,10 +929,6 @@ def calCarAndCrash():
 
     # print("crash: " +str(carCrash))
     # print("crasTime: "+ str(carCrashTime))
-
-
-
-        
 
 
 # 風險檢測
@@ -850,18 +950,18 @@ def riskFollowing():
             notice = 1.5
         elif "no" in now:
             notice = 1.5
-        elif "veh" in now and  "veh" in front:
+        elif "veh" in now and "veh" in front:
             notice = 0.1
-            
 
         # 取得車輛速度
         frontSpeed = traci.vehicle.getSpeed(front)
         nowSpeed = traci.vehicle.getSpeed(now)
         # 車與車之間x座標之距離
-        gap = traci.vehicle.getPosition(front)[0] - traci.vehicle.getPosition(now)[0] - 4
+        gap = traci.vehicle.getPosition(
+            front)[0] - traci.vehicle.getPosition(now)[0] - 4
         # 計算理當前理想的跟車速度
         acci = calFollowSpeed(nowSpeed, frontSpeed, gap, notice, 8)
-        
+
         # 計算單前風險值
         followRisk = acci / 8
 
@@ -885,8 +985,8 @@ def riskFollowing():
             #     print("safe distace : " +str(saftyDistace))
             #     print("gap : " +str(gap))
             #     print("acci: "+ str(acci))
-            # 
-              
+            #
+
             # if saftyDistace > gap:
             #     offset = saftyDistace - gap
 
@@ -897,8 +997,8 @@ def riskFollowing():
                     newSpeed = traci.vehicle.getSpeed(now) - oneSpeed
                     traci.vehicle.setSpeed(now, newSpeed)
                     if i == 9:
-                        print("oneSpeed : " +str(oneSpeed))
-                        print("newSpeed : " +str(newSpeed))
+                        print("oneSpeed : " + str(oneSpeed))
+                        print("newSpeed : " + str(newSpeed))
 
             # # 計算合理的減速度
             # if saftyDistace > gap:
@@ -918,7 +1018,7 @@ def riskFollowing():
             #     return 0
             # elif saftyDistace < gap:
             #     distaceOffset = gap - saftyDistace
-            #     distaceOffset10 = (distaceOffset / 6) 
+            #     distaceOffset10 = (distaceOffset / 6)
             #     newSpeed = traci.vehicle.getSpeed(now) + distaceOffset / 2
             #     traci.vehicle.setSpeed(now, newSpeed)
         else:
@@ -928,6 +1028,8 @@ def riskFollowing():
 
 # normal python
 # 空間初始化
+
+
 def spaceInit():
     global matrixLength, spaceMatrix, startEndSpace, fleetMatrix
     for i in range(10):
@@ -936,7 +1038,8 @@ def spaceInit():
     matrixLength = np.size(space)
     spaceMatrix = np.empty((matrixLength, matrixLength))
     fleetMatrix = np.empty((matrixLength, matrixLength))
-    startEndSpace = [["1" for _ in range(matrixLength)] for _ in range(matrixLength)]
+    startEndSpace = [["1" for _ in range(matrixLength)]
+                     for _ in range(matrixLength)]
 
 
 def fleetCalculatePosition():
@@ -962,22 +1065,20 @@ def fleetCalculate():
                 start = j
                 end = i
                 tmp = 0
-                for k in range(start,end+1):
+                for k in range(start, end+1):
                     tmp = tmp + carLength + safeDistace[k]
                 fleetMatrix[i, j] = tmp
 
-            elif  i < j:
+            elif i < j:
                 start = i
                 end = j
                 tmp = 0
-                for k in range(start,end+1):
+                for k in range(start, end+1):
                     tmp = tmp + carLength + safeDistace[k]
                 fleetMatrix[i, j] = tmp
                 # fleetMatrix[i, j] = int(abs(vehPosition - vehPosition1) + carLength + safeSpce)
-    # print("qeeqeq")            
+    # print("qeeqeq")
     # print ('%1.2f' %(fleetMatrix[0, 9]))
-
-
 
 
 # changeNeedSpace = np.zeros(10)
@@ -1004,7 +1105,6 @@ def fleetCalculate():
 #    spaceMatrix[i,i] = space[i]
 
 
-
 # count = 0
 # for i in range(matrixLength):
 #     for j in range(matrixLength):
@@ -1014,7 +1114,6 @@ def fleetCalculate():
 #             satisTmp.append(abs(i - j) + 1)
 #             newSatisSpaceNumber.append(abs(i - j) + 1)
 #             mappingStartEnd.append(startEndSpace[i][j])
-
 
 
 # print(satisSpace)
@@ -1029,7 +1128,7 @@ def fleetCalculate():
 # if min(satisSpaceNumber)
 
 
-#////////////////////////////
+# ////////////////////////////
 
 # miniIndex = []
 # miniIndexSpace = []
@@ -1094,11 +1193,9 @@ def fleetCalculate():
 # print(chooseSpace)
 
 
-
-
 def startSimulate():
     global step
-    global f, f2,f3
+    global f, f2, f3
     global stopChangeFlag
     global decStopCal, decStopFlag
     while step < 40000:
@@ -1139,42 +1236,41 @@ def startSimulate():
                 carFittingSpace()
 
             # if decStopFlag == 0:
-            #     calFitFleetSpace(fleetMatrix[0, 9]) 
+            #     calFitFleetSpace(fleetMatrix[0, 9])
             #     sortingSpace()
             #     sortingMiniChoose()
             #     carFittingSpace()
-            print("veh0 - stop: "+str(traci.vehicle.getPosition("stop")[0]-traci.vehicle.getPosition("veh0")[0]))
-            print("veh0 - no6 :"+str(traci.vehicle.getPosition("veh0")[0]-traci.vehicle.getPosition("no6")[0] ))
+            print("veh0 - stop: "+str(traci.vehicle.getPosition("stop")
+                  [0]-traci.vehicle.getPosition("veh0")[0]))
+            print("veh0 - no6 :"+str(traci.vehicle.getPosition("veh0")
+                  [0]-traci.vehicle.getPosition("no6")[0]))
             # if  traci.vehicle.getPosition("stop")[0] - traci.vehicle.getPosition("veh0")[0]< 200 and decStopFlag == 0 :
-            if  decStopFlag == 0 :
+            if decStopFlag == 0:
                 # print("fsdfsdf")
                 distributeSpace()
             if decStopFlag == 1:
                 countiDecGroup()
-                spaceFleetClose()
-                laneChangeSpeedRecover()
-            # spaceFleetClose()
-            # laneChangeSpeedRecover()
-            riskFollowing()
-            
+                print("speedOther: "+str(traci.vehicle.getSpeed("no0")))
+                # spaceFleetClose()
+                # laneChangeSpeedRecover()
+            spaceFleetClose()
+            laneChangeSpeedRecover()
+            # riskFollowing()
 
         if step == 1:
             for i in range(11):
                 vehString = "veh"+str(i)
                 noString = "no"+str(i)
-                traci.vehicle.setSpeed(vehString, 10)
-                # traci.vehicle.setSpeed(noString, 5)
-                if i ==10 :
+                traci.vehicle.setSpeed(vehString, 28)
+                traci.vehicle.setSpeed(noString, 30)
+                if i == 10:
                     traci.vehicle.setSpeed(vehString, 0)
-            
+
             for i in range(10):
                 noString = "no"+str(i)
                 traci.vehicle.setDecel(noString, 0)
                 traci.vehicle.setEmergencyDecel(noString, 0)
                 traci.vehicle.setApparentDecel(noString, 0)
-
-
-
 
         if step > 1500 and stopChangeFlag < 11 and false:
             for i in range(11):
@@ -1188,14 +1284,17 @@ def startSimulate():
                     frontSlideDistace = calSlideDistace(frontSpeed, 8, 1.5)
                     safetyDistace = 0
                     if traci.vehicle.getPosition(no)[0]-traci.vehicle.getPosition(veh1)[0] - 4 < 60:
-                        solve_value = calRiskBySpeed(frontSpeed, frontSpeed, 8, 1.5, 1)
+                        solve_value = calRiskBySpeed(
+                            frontSpeed, frontSpeed, 8, 1.5, 1)
                         if ":" in str(solve_value):
                             characters = "{,x:}"
                             tempString = str(solve_value)
                             for j in range(len(characters)):
-                                tempString = tempString.replace(characters[j], "")
+                                tempString = tempString.replace(
+                                    characters[j], "")
                             safetyDistace = float(tempString)
-                    gap = traci.vehicle.getPosition(no)[0]-traci.vehicle.getPosition(veh1)[0] - 4
+                    gap = traci.vehicle.getPosition(
+                        no)[0]-traci.vehicle.getPosition(veh1)[0] - 4
 
                     # if i == 10:
                     #     print ("gap: " + str(gap))
@@ -1203,8 +1302,8 @@ def startSimulate():
                     #     print ("gap + frontSlideDistace: " + str(gap + frontSlideDistace))
                     #     print ("nowSpeed * 1.5: " + str(nowSpeed * 1.5))
                     if gap > 0:
-                    #   if i > 0 and traci.vehicle.getPosition(no)[0]-traci.vehicle.getPosition(veh1)[0] < 40 and changeFlag[i] == 0:
-                        if i > 0 and gap + frontSlideDistace > (frontSpeed * 1.5)  and  gap - safetyDistace < 1 and safetyDistace < gap  and changeFlag[i] == 0:
+                        #   if i > 0 and traci.vehicle.getPosition(no)[0]-traci.vehicle.getPosition(veh1)[0] < 40 and changeFlag[i] == 0:
+                        if i > 0 and gap + frontSlideDistace > (frontSpeed * 1.5) and gap - safetyDistace < 1 and safetyDistace < gap and changeFlag[i] == 0:
                             if i % 2 == 0:
                                 traci.vehicle.changeLane(veh1, 1, 150)
                                 traci.vehicle.changeLane(veh, 1, 150)
@@ -1237,15 +1336,12 @@ def startSimulate():
         save = ""
         for i in range(10):
             vehString = "veh"+str(i)
-            gap = str(traci.vehicle.getPosition(vehString)[0])+" "+str(traci.vehicle.getPosition(vehString)[1])
+            gap = str(traci.vehicle.getPosition(vehString)[
+                      0])+" "+str(traci.vehicle.getPosition(vehString)[1])
             save = save + " " + str(gap)
         f4.write(str(step/100)+save+"\n")
 
         step += 1
-
-            
-
-
 
 
 if __name__ == "__main__":
