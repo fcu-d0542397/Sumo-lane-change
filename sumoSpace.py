@@ -78,6 +78,8 @@ mappingStartEnd = []
 
 # 計算風險安全距離
 x = Symbol('x')
+eSafe = Symbol('eSafe')
+newSpeed = Symbol('newSpeed')
 
 # 車輛座標位置
 fleetPosition = []
@@ -745,9 +747,58 @@ def distributeSpace():
         if timeDec != 0:
             # dec = ((fleetPosition[groupArray[i]] - otherPosition[start + i] - safty) / ((fleetSpeed[groupArray[i]] - frontSpeed)* timeDec)) * 2 / timeDec
             # dec = 2 * ((fleetPosition[groupArray[i]] - otherPosition[start + i] - safty) - ((fleetSpeed[groupArray[i]] - frontSpeed)* timeDec)) /  (timeDec ** 2)
-            dec = -((otherPosition[start + i]-fleetPosition[groupArray[i]] + 4 - groupSafty[i]) - (
-                (fleetSpeed[groupArray[i]] - frontSpeed) * timeDec)) / (timeDec ** 2 * 0.5)
-            print("dec: "+str(dec))
+            
+            # dec = -((otherPosition[start + i]-fleetPosition[groupArray[i]] + 4 - groupSafty[i]) - (
+            #     (fleetSpeed[groupArray[i]] - frontSpeed) * timeDec)) / (timeDec ** 2 * 0.5)
+            # print("dec: "+str(dec))
+
+            solved2 = calACCSpeedDiff(otherPosition[start + i] - 4,fleetPosition[groupArray[i]],fleetSpeed[groupArray[i]],frontSpeed,timeDec,1.5)
+            if solved2[0][0] > 0 and solved2[0][0] <= 8:
+                indexAnswer = 0
+            elif solved2[1][0] > 0 and solved2[1][0] <= 8:
+                indexAnswer = 1
+            if solved2[indexAnswer][2] < 0:
+                solved2 = calACCSpeedDiff2(otherPosition[start + i] - 4,fleetPosition[groupArray[i]],fleetSpeed[groupArray[i]],frontSpeed,timeDec,1.5)
+                print(solved2)
+                if ":" in str(solved2):
+                    characters = "{:x newSpeed eSafe}"
+                    tempString = str(solved2)
+                for j in range(len(characters)):
+                    tempString = tempString.replace(characters[j], "")
+                key = tempString
+                splitString = key.split(',')
+                dec = float(splitString[0])
+                # newSpeed = []
+                groupSafty[i]= float(splitString[2])
+                # print("ssssddsdsd:"+str(splitString))
+                # print(value)
+            else: 
+                print(solved2[indexAnswer])
+                dec = float(solved2[indexAnswer][0])
+                groupSafty[i] = float(solved2[indexAnswer][2])
+
+            # print(solved2)
+            # if ":" in str(solved2):
+            #     characters = "{:x newSpeed eSafe}"
+            #     tempString = str(solved2)
+            # for j in range(len(characters)):
+            #     tempString = tempString.replace(characters[j], "")
+            # key = tempString
+            # splitString = key.split(',')
+            # dec = float(splitString[0])
+            # # newSpeed = []
+            # groupSafty[i]= float(splitString[2])
+
+
+                # print("ssssddsdsd:"+str(splitString))
+                # print(value)
+
+
+
+            # print(solved2[0])
+            # print(type(solved2[0][0]))
+            # # print(solved[1])
+
             if dec > 8:
                 dec = 8
             decArray[i] = dec
@@ -782,8 +833,6 @@ def distributeSpace():
     decStopCal = 0
 
 # 持續減速
-
-
 def countiDecGroup():
     global decStopCal, decStopFlag
     # print(minSatirange)
@@ -817,8 +866,6 @@ def countiDecGroup():
                     print(str(j)+": "+str(traci.vehicle.getSpeed(veh)))
 
 # 檢查空間與車隊距離
-
-
 def spaceFleetClose():
     global step
     start, end = minSatirange.split("-")
@@ -830,19 +877,34 @@ def spaceFleetClose():
         # print(groupArray)
         # print(groupSafty[i])
         print("safty: "+str(groupSafty[i]))
+
         nowSpeed2 = traci.vehicle.getSpeed("veh"+str(groupArray[i]))
         frontSpeed2 = traci.vehicle.getSpeed("no"+str(start + i))
-        if groupSafty[i] == 0:
-            nowSpeed = traci.vehicle.getSpeed("veh"+str(groupArray[i]))
-            frontSpeed = traci.vehicle.getSpeed("no"+str(start + i))
-            solve_value = calRiskBySpeed(frontSpeed, frontSpeed, 8, 1.5, 1)
-            if ":" in str(solve_value):
-                characters = "{,x:}"
-                tempString = str(solve_value)
-                for j in range(len(characters)):
-                    tempString = tempString.replace(characters[j], "")
-                safty = float(tempString)
-                groupSafty[i] = safty
+
+        # if groupSafty[i] == 0:
+        #     nowSpeed = traci.vehicle.getSpeed("veh"+str(groupArray[i]))
+        #     frontSpeed = traci.vehicle.getSpeed("no"+str(start + i))
+        #     solve_value = calRiskBySpeed(frontSpeed, frontSpeed, 8, 1.5, 1)
+        #     if ":" in str(solve_value):
+        #         characters = "{,x:}"
+        #         tempString = str(solve_value)
+        #         for j in range(len(characters)):
+        #             tempString = tempString.replace(characters[j], "")
+        #         safty = float(tempString)
+        #         groupSafty[i] = safty
+
+        # elif groupSafty[i] < 0:
+        #     nowSpeed = traci.vehicle.getSpeed("no"+str(start + i))
+        #     nowSpeed = nowSpeed - nowSpeed/4
+        #     frontSpeed = traci.vehicle.getSpeed("no"+str(start + i))
+        #     solve_value = calRiskBySpeed(frontSpeed, frontSpeed, 8, 1.5, 1)
+        #     if ":" in str(solve_value):
+        #         characters = "{,x:}"
+        #         tempString = str(solve_value)
+        #         for j in range(len(characters)):
+        #             tempString = tempString.replace(characters[j], "")
+        #         safty = float(tempString)
+        #         groupSafty[i] = safty
 
         # print(abs(otherPosition[start+i] - fleetPosition[groupArray[i]]-groupSafty[i])<1)
         # print(abs(otherPosition[start+i] - fleetPosition[groupArray[i]]-groupSafty[i])<1)
@@ -853,9 +915,9 @@ def spaceFleetClose():
         #     nowSpeed*1.5
 
         if i == len(groupArray) - 1:
-
             # if fleetPosition[groupArray[i]] < otherPosition[start + i] and abs(otherPosition[start+i]- 4 - fleetPosition[groupArray[i]]-groupSafty[i]) < (frontSpeed2-nowSpeed2)*5+((frontSpeed2-nowSpeed2)/6)*(frontSpeed2-nowSpeed2) and groupChangeArray[i] == 0 and groupSafty[i] > 0:
-            if abs(otherPosition[start+i] - 4 - fleetPosition[groupArray[i]]-groupSafty[i]) < (frontSpeed2-nowSpeed2)*1.5 and groupChangeArray[i] == 0 and groupSafty[i] > 0:
+            # if abs(otherPosition[start+i] - 4 - fleetPosition[groupArray[i]]-groupSafty[i]) < (frontSpeed2-nowSpeed2)*2 and groupChangeArray[i] == 0 and groupSafty[i] > 0:
+            if abs(otherPosition[start+i] - 4 - fleetPosition[groupArray[i]]-groupSafty[i]) < 4 and groupChangeArray[i] == 0 and groupSafty[i] > 0:
                 # print("safty: "+str(groupSafty[i]))
                 groupChangeTime[i] = step
                 for j in range(groupArray[i], 10):
@@ -865,9 +927,10 @@ def spaceFleetClose():
                     groupChangeArray[i] = 1
         else:
             # abs(otherPosition[start+i] - fleetPosition[groupArray[i]]) < 3
-
+            print(str(i)+" :"+str((otherPosition[start+i] - 4 - fleetPosition[groupArray[i]] - groupSafty[i])))
             # if fleetPosition[groupArray[i]] < otherPosition[start+i] and abs(otherPosition[start+i] - 4 - fleetPosition[groupArray[i]]-groupSafty[i]) < (frontSpeed2-nowSpeed2)*5+((frontSpeed2-nowSpeed2)/6)*(frontSpeed2-nowSpeed2) and groupChangeArray[i] == 0 and groupSafty[i] > 0:
-            if abs(otherPosition[start+i] - 4 - fleetPosition[groupArray[i]] - groupSafty[i]) < (frontSpeed2-nowSpeed2)*1.5 and groupChangeArray[i] == 0 and groupSafty[i] > 0:
+            # if abs(otherPosition[start+i] - 4 - fleetPosition[groupArray[i]] - groupSafty[i]) < (frontSpeed2-nowSpeed2)*2 and groupChangeArray[i] == 0 and groupSafty[i] > 0:
+            if abs(otherPosition[start+i] - 4 - fleetPosition[groupArray[i]] - groupSafty[i]) < 4 and groupChangeArray[i] == 0 and groupSafty[i] > 0:
                 groupChangeTime[i] = step
                 for j in range(groupArray[i], groupArray[i+1]):
                     veh = "veh" + str(j)
@@ -876,8 +939,6 @@ def spaceFleetClose():
                     groupChangeArray[i] = 1
 
 # 換完車道回復車速
-
-
 def laneChangeSpeedRecover():
     global step, recoverSpeedFlag, start, end
     start, end = minSatirange.split("-")
@@ -885,7 +946,7 @@ def laneChangeSpeedRecover():
     end = int(end)
     for i in range(len(groupArray)):
         if i == len(groupArray) - 1 and groupChangeArray[i] == 1:
-            if groupChangeArray[i] == 1 and step >= groupChangeTime[i] + 0 and groupChangeFlag[i] == 0:
+            if groupChangeArray[i] == 1 and step >= groupChangeTime[i] + 150 and groupChangeFlag[i] == 0:
                 # if  groupChangeSpeedUp[i] == 0:
                 #     frontSpeed = traci.vehicle.getSpeed("no"+str(start+i))
                 #     groupChangeSpeedUp[i] = otherPosition[start+i] - fleetPosition[groupArray[i]] / (frontSpeed - fleetSpeed[groupArray[i]])
@@ -901,7 +962,7 @@ def laneChangeSpeedRecover():
                         traci.vehicle.setSpeed(veh, fleetSpeed[j] + 6 / 100)
                 # groupChangeFlag[i] = 1
         elif groupChangeArray[i] == 1:
-            if groupChangeArray[i] == 1 and step >= groupChangeTime[i] + 0 and groupChangeFlag[i] == 0:
+            if groupChangeArray[i] == 1 and step >= groupChangeTime[i] + 150 and groupChangeFlag[i] == 0:
                 # if  groupChangeSpeedUp[i] == 0:
                 #     frontSpeed = traci.vehicle.getSpeed("no"+str(start+i))
                 #     groupChangeSpeedUp[i] = otherPosition[start+i] - fleetPosition[groupArray[i]] / (frontSpeed - fleetSpeed[groupArray[i]])
@@ -929,6 +990,36 @@ def calCarAndCrash():
 
     # print("crash: " +str(carCrash))
     # print("crasTime: "+ str(carCrashTime))
+
+
+#新計算減速度(安全距離) 
+def calACCSpeedDiff(locationX,groupPosition,nowSpeed, frontSpeed,t,notice):
+    # solve_value = solve([(-10-46.0)-(nowSpeed-frontSpeed)*t-(0.5*x*(t**2))], [x])
+
+
+    solve_value = solve([locationX - groupPosition - eSafe + (frontSpeed - newSpeed)* 1.5 -((nowSpeed-frontSpeed)*t-(0.5*x*(t**2))), 
+                        newSpeed-(nowSpeed - x * t), 
+                        # eSafe - (((newSpeed**2 - frontSpeed**2) /(2 * 8)) + newSpeed*1.5)
+                        # eSafe - newSpeed * notice
+                        ((newSpeed**2 * 8) /(frontSpeed**2 +2*8*(eSafe - newSpeed * notice)) / 8) - 1
+                        ], [x, newSpeed, eSafe],)
+
+    return solve_value
+
+# 修正安全距離為負
+def calACCSpeedDiff2(locationX,groupPosition,nowSpeed, frontSpeed,t,notice):
+    # solve_value = solve([(-10-46.0)-(nowSpeed-frontSpeed)*t-(0.5*x*(t**2))], [x])
+    
+
+
+    solve_value = solve([locationX - groupPosition - eSafe + (frontSpeed - newSpeed) * 1.5 -((nowSpeed-frontSpeed)*t-(0.5*x*(t**2))), 
+                        newSpeed-(nowSpeed - x * t), 
+                        # eSafe - (((newSpeed**2 - frontSpeed**2) /(2 * 8)) + newSpeed*1.5)
+                        # ((newSpeed**2 * 8) /(frontSpeed**2 +2*8*(eSafe - newSpeed * 1.5)) / 8) - 1
+                        eSafe - newSpeed * notice
+                        ], [x, newSpeed, eSafe],)
+
+    return solve_value
 
 
 # 風險檢測
@@ -1261,16 +1352,16 @@ def startSimulate():
             for i in range(11):
                 vehString = "veh"+str(i)
                 noString = "no"+str(i)
-                traci.vehicle.setSpeed(vehString, 28)
-                traci.vehicle.setSpeed(noString, 30)
+                traci.vehicle.setSpeed(vehString, 30)
+                traci.vehicle.setSpeed(noString, 28)
                 if i == 10:
                     traci.vehicle.setSpeed(vehString, 0)
 
             for i in range(10):
                 noString = "no"+str(i)
-                traci.vehicle.setDecel(noString, 0)
-                traci.vehicle.setEmergencyDecel(noString, 0)
-                traci.vehicle.setApparentDecel(noString, 0)
+                # traci.vehicle.setDecel(noString, 0)
+                # traci.vehicle.setEmergencyDecel(noString, 0)
+                # traci.vehicle.setApparentDecel(noString, 0)
 
         if step > 1500 and stopChangeFlag < 11 and false:
             for i in range(11):

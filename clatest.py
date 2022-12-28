@@ -9,6 +9,8 @@ import threading
 import time
 
 x = Symbol('x')
+eSafe = Symbol('eSafe')
+newSpeed = Symbol('newSpeed')
 
 
 def calRiskBySpeed(nowSpeed, frontSpeed, maxBrake, notice, expect):
@@ -23,28 +25,39 @@ def calACC(t):
 
 
 def calACCSpeedDiff(nowSpeed, frontSpeed,t):
-    solve_value = solve([(-10-46.0)-(nowSpeed-frontSpeed)*t+(0.5*x*(t**2))], [x])
+    # solve_value = solve([(-10-46.0)-(nowSpeed-frontSpeed)*t-(0.5*x*(t**2))], [x])
+
+
+    solve_value = solve([500-600 - eSafe + newSpeed * 1.5 -((nowSpeed-frontSpeed)*t-(0.5*x*(t**2))), 
+                        newSpeed-(nowSpeed - x * t), 
+                        # eSafe - (((newSpeed**2 - frontSpeed**2) /(2 * 8)) + newSpeed*1.5)
+                        ((newSpeed**2 * 8) /(frontSpeed**2 +2*8*(eSafe - newSpeed * 1.5)) / 8) - 1
+                        ], [x, newSpeed, eSafe])
+
     return solve_value
 
 
-print(calRiskBySpeed(30,30,8,1.5,1))
+print(calRiskBySpeed(24,30,8,1.5,1))
 
 
 # 3.2833999999852495
 
 time = 100
 nowSpeed = 20
-frontSpeed = 12
+frontSpeed = 15
 a = calACCSpeedDiff(nowSpeed,frontSpeed,time)
-if ":" in str(a):
-    characters = "{x:}"
-    tempString = str(a)
-    for j in range(len(characters)):
-        tempString = tempString.replace(characters[j], "")
-    a = float(tempString)
-ans = nowSpeed - a*time
-print("dec is: "+str(a))
-print(ans)
+print(a)
+
+
+# if ":" in str(a):
+#     characters = "{x:}"
+#     tempString = str(a)
+#     for j in range(len(characters)):
+#         tempString = tempString.replace(characters[j], "")
+#     a = float(tempString)
+# ans = nowSpeed - a*time
+# print("dec is: "+str(a))
+# print(ans)
 
 
 
