@@ -23,6 +23,7 @@ f = 0
 f2 = 0
 f3 = 0
 f4 = 0
+f5 = 0
 
 # 停止換車道參數
 stopChangeFlag = 0
@@ -125,7 +126,7 @@ recoverSpeedFlag = 0
 
 
 def writeInit():
-    global f, f2, f3, f4
+    global f, f2, f3, f4, f5
     os.remove("output.txt")
     print("File removed successfully")
     path = 'output.txt'
@@ -145,6 +146,11 @@ def writeInit():
     print("File removed successfully")
     path = 'output4.txt'
     f4 = open(path, 'a')
+
+    os.remove("output5.txt")
+    print("File removed successfully")
+    path = 'output5.txt'
+    f5 = open(path, 'a')
 
 # 初始化車子分配空間
 
@@ -395,7 +401,7 @@ def moveVehiclePosition():
         if i == 0:
             temp1 = traci.vehicle.getPosition(veh)[0]
             temp2 = traci.vehicle.getPosition(veh)[1]
-            temp1 = temp1 + 460
+            temp1 = temp1 + 520
             traci.vehicle.moveToXY(veh, "1to2", 0, temp1, temp2)
         elif i == 10:
             temp1 = temp1 - 100
@@ -530,8 +536,6 @@ def sortingSpace():
     satisTmp.clear()
 
 # 選擇最小的空間
-
-
 def sortingMiniChoose():
     global restartFlag, minSatirange, spaceCarCount, matrixLength
     chooseSpace = []
@@ -753,6 +757,7 @@ def distributeSpace():
             # print("dec: "+str(dec))
 
             solved2 = calACCSpeedDiff(otherPosition[start + i] - 4,fleetPosition[groupArray[i]],fleetSpeed[groupArray[i]],frontSpeed,timeDec,1.5)
+            print("sdsdsds: "+str(solved2))
             if solved2[0][0] > 0 and solved2[0][0] <= 8:
                 indexAnswer = 0
             elif solved2[1][0] > 0 and solved2[1][0] <= 8:
@@ -1286,7 +1291,7 @@ def fleetCalculate():
 
 def startSimulate():
     global step
-    global f, f2, f3
+    global f, f2, f3, f4, f5
     global stopChangeFlag
     global decStopCal, decStopFlag
     while step < 40000:
@@ -1353,7 +1358,7 @@ def startSimulate():
                 vehString = "veh"+str(i)
                 noString = "no"+str(i)
                 traci.vehicle.setSpeed(vehString, 30)
-                traci.vehicle.setSpeed(noString, 28)
+                traci.vehicle.setSpeed(noString, 32)
                 if i == 10:
                     traci.vehicle.setSpeed(vehString, 0)
 
@@ -1405,10 +1410,18 @@ def startSimulate():
                                 stopChangeFlag = stopChangeFlag + 1
         if step > -1:
             save = ""
-        for i in range(11):
-            vehString = "veh"+str(i)
+        # for i in range(11):
+        #     vehString = "veh"+str(i)
+        #     save = save + " " + str(traci.vehicle.getSpeed(vehString))
+        # f.write(str(step/100)+save+"\n")
+
+        for i in range(len(groupArray)):
+            vehString = "veh"+str(groupArray[i])
+            print(vehString)
+            print(traci.vehicle.getSpeed(vehString))
             save = save + " " + str(traci.vehicle.getSpeed(vehString))
         f.write(str(step/100)+save+"\n")
+
         save = ""
         for i in range(10):
             vehString = "veh"+str(i)
@@ -1431,6 +1444,14 @@ def startSimulate():
                       0])+" "+str(traci.vehicle.getPosition(vehString)[1])
             save = save + " " + str(gap)
         f4.write(str(step/100)+save+"\n")
+
+        save = ""
+        for i in range(11):
+            noString = "no"+str(i)
+            # traci.vehicle.getSpeed(noString)
+            # gap = str(traci.vehicle.getPosition(vehString)[0])+" "+str(traci.vehicle.getPosition(vehString)[1])
+            save = save + " " + str(traci.vehicle.getSpeed(noString))
+        f5.write(str(step/100)+save+"\n")
 
         step += 1
 
