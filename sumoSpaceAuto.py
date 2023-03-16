@@ -8,10 +8,10 @@ from sympy import *
 import threading
 import time
 
-sumoBinary = "C:\\Program Files (x86)\\Eclipse\\Sumo\\bin\\sumo-gui.exe"
+sumoBinary = "C:\\Program Files (x86)\\Eclipse\\Sumo\\bin\\sumo.exe"
 sumoCmd = [sumoBinary, "-c",
            "C:\\Users\\user\\Desktop\\sumo\\laneChange\\space\\myConfig.sumocfg"]
-traci.start(sumoCmd)
+# traci.start(sumoCmd)
 
 # traci start
 # 變數宣告
@@ -120,6 +120,19 @@ decArray = []
 decStopCal = 0
 decStopFlag = 0
 recoverSpeedFlag = 0
+
+
+chooseSpace = []
+
+# random
+spaceRandom = [[0]*10]*10
+
+
+# speedFleet = 0
+# times = 0
+# saveName1 = ""
+# saveName2 = ""
+
 
 # inital function start
 # 寫檔初始化
@@ -413,17 +426,28 @@ def moveVehiclePosition():
             traci.vehicle.moveToXY(veh, "1to2", 0, temp1, temp2)
 
 
-def moveNonFleetPosition():
+def moveNonFleetPosition(times):
     temp1 = 0
     temp2 = 0
     firstVehPosition = traci.vehicle.getPosition("veh0")[0]
     firstNoFleetPosition = firstVehPosition - 20 + 530
     # spaceArray = [134, 147, 111, 102, 119, 122, 141, 106, 144, 101, 103]
-    spaceArray =[103, 122, 125, 124, 101, 147, 150, 112, 116, 141, 100]
+
+    spaceRandom[0] = [134, 147, 111, 102, 119, 122, 141, 106, 144, 101, 103]
+    spaceRandom[1] = [126, 121, 123, 121, 123, 122, 127, 125, 130, 123, 127]
+    spaceRandom[2] = [112, 110, 118, 105, 113, 112, 120, 114, 124, 125, 120]
+    spaceRandom[3] = [140, 124, 123, 133, 147, 105, 114, 135, 127, 115, 132]
+    spaceRandom[4] = [115, 122, 125, 124, 101, 147, 150, 112, 116, 141, 100]
+    spaceRandom[5] = [144, 110, 142, 131, 126, 111, 108, 122, 123, 124, 132]
+    spaceRandom[6] = [119, 121, 130, 140, 129, 103, 104, 106, 120, 115, 123]
+    spaceRandom[7] = [150, 142, 116, 121, 143, 110, 103, 113, 111, 149, 120]
+    spaceRandom[8] = [133, 147, 119, 146, 122, 132, 111, 124, 145, 115, 114]
+    spaceRandom[9] = [107, 117, 105, 101, 125, 114, 119, 139, 100, 112, 131]
+
+    spaceArray = spaceRandom[times]
+    # spaceArray = [134, 147, 111, 102, 119, 122, 141, 106, 144, 101, 103]
     # spaceArray = [126,121,123,121,123,122,127,125,130,123,127]
     # spaceArray = [112,110,118,105,113,112,120,114,124,125,120]
-
-    
 
     for i in range(12):
         no = "no"+str(i)
@@ -550,7 +574,7 @@ def sortingSpace():
                 end = int(temp[1])
 
             elif start > int(temp[0]):
-            # elif minSatiSpace >satisSpace[i]:
+                # elif minSatiSpace >satisSpace[i]:
                 minSatiSpace = satisSpace[i]
                 minSatirange = mappingStartEnd[i]
                 start = int(temp[0])
@@ -589,8 +613,8 @@ def sortingSpace():
 
 
 def sortingMiniChoose():
-    global restartFlag, minSatirange, spaceCarCount, matrixLength
-    chooseSpace = []
+    global restartFlag, minSatirange, spaceCarCount, matrixLength, chooseSpace
+    chooseSpace.clear()
     spaceCarCount.clear()
     start, end = minSatirange.split("-")
     print("start: "+str(start))
@@ -736,7 +760,7 @@ def sortingMiniChoose():
     else:
         print(minSatirange)
         print(countAll(spaceCarCount))
-        print("spaceCarCount: "+str(spaceCarCount))
+        print(spaceCarCount)
         print("\n")
         print(groupArray)
 
@@ -1437,12 +1461,20 @@ def fleetCalculate():
 # print(chooseSpace)
 
 
-def startSimulate():
+def startSimulate(speedFleet, times, saveName1, saveName2,saveName3):
+    # sumoBinary = "C:\\Program Files (x86)\\Eclipse\\Sumo\\bin\\sumo.exe"
+    # sumoCmd = [sumoBinary, "-c",
+    #        "C:\\Users\\user\\Desktop\\sumo\\laneChange\\space\\myConfig.sumocfg"]
+    traci.start(sumoCmd)
+    initVal()
+
     global step
     global f, f2, f3, f4, f5
     global stopChangeFlag
     global decStopCal, decStopFlag
-    while step < 40000:
+    # fileOne, fileTwo = 0
+    while step < 6000:
+        # while step < 40000:
         traci.simulationStep()
         if step == 0:
             staticChangeSpace()
@@ -1457,9 +1489,36 @@ def startSimulate():
             writeInit()
             spaceInit()
 
+            if os.path.isfile(saveName1):
+                os.remove(saveName1)
+                print("File removed successfully")
+                path = saveName1
+                fileOne = open(path, 'a')
+            else:
+                path = saveName1
+                fileOne = open(path, 'a')
+
+            if os.path.isfile(saveName2):
+                os.remove(saveName2)
+                print("File removed successfully")
+                path = saveName2
+                fileTwo = open(path, 'a')
+            else:
+                path = saveName2
+                fileTwo = open(path, 'a')
+
+            if os.path.isfile(saveName3):
+                os.remove(saveName3)
+                print("File removed successfully")
+                path = saveName3
+                fileThree = open(path, 'a')
+            else:
+                path = saveName3
+                fileThree = open(path, 'a')
+
         if step == 50:
             moveVehiclePosition()
-            moveNonFleetPosition()
+            moveNonFleetPosition(times)
 
         if step > 200:
             calculateSafeDistance()
@@ -1506,7 +1565,7 @@ def startSimulate():
             for i in range(11):
                 vehString = "veh"+str(i)
                 noString = "no"+str(i)
-                traci.vehicle.setSpeed(vehString, 16.66)
+                traci.vehicle.setSpeed(vehString, speedFleet)
                 traci.vehicle.setSpeed(noString, 30)
                 if i == 10:
                     traci.vehicle.setSpeed(vehString, 0)
@@ -1564,12 +1623,16 @@ def startSimulate():
         #     save = save + " " + str(traci.vehicle.getSpeed(vehString))
         # f.write(str(step/100)+save+"\n")
 
+        if step == 1000:
+            fileThree.write(str(spaceCarCount)+"\n")
+
         for i in range(len(groupArray)):
             vehString = "veh"+str(groupArray[i])
             print(vehString)
             print(traci.vehicle.getSpeed(vehString))
             save = save + " " + str(traci.vehicle.getSpeed(vehString))
         f.write(str(step/100)+save+"\n")
+        fileOne.write(str(step/100)+save+"\n")
 
         save = ""
         for i in range(10):
@@ -1601,10 +1664,73 @@ def startSimulate():
             # gap = str(traci.vehicle.getPosition(vehString)[0])+" "+str(traci.vehicle.getPosition(vehString)[1])
             save = save + " " + str(traci.vehicle.getSpeed(noString))
         f5.write(str(step/100)+save+"\n")
-
+        fileTwo.write(str(step/100)+save+"\n")
         step += 1
+        
+    traci.close()
+    f.close()
+    f2.close()
+    f3.close()
+    f4.close()
+    f5.close()
+    fileOne.close()
+    fileTwo.close()
+    fileThree.close()
+
+    # step = 0
+    # initVal()
+
+    # return 0
+
+
+def initVal():
+    global space, step
+    global fleetPosition, otherPosition, fleetLandID, otherLandID
+    global safeDistace, fleetSpeed, selectdone
+    global carAssignSpace, carCrash, carCrashTime, decArray, changeFlag, changeSpeedTime
+    global satisSpace, satisSpaceNumber, satisTmp, newSatisSpaceNumber, mappingStartEnd
+    global miniIndex, miniIndexSpace, mappingStartEndSorting, chooseSpace
+    global decStopFlag, decStopCal
+
+    step = 0
+
+    space.clear()
+    fleetPosition.clear()
+    otherPosition.clear()
+    fleetLandID.clear()
+    otherLandID.clear()
+    safeDistace.clear()
+    fleetSpeed.clear()
+    selectdone.clear()
+
+    carAssignSpace.clear()
+    carCrash.clear()
+    carCrashTime.clear()
+    decArray.clear()
+    changeFlag.clear()
+
+    changeSpeedTime.clear()
+
+    # spaceMatrix.clear()
+    # fleetMatrix.clear()
+    # startEndSpace.clear()
+
+    satisSpace.clear()
+    satisSpaceNumber.clear()
+    satisTmp.clear()
+    newSatisSpaceNumber.clear()
+    mappingStartEnd.clear()
+
+    miniIndex.clear()
+    miniIndexSpace.clear()
+    mappingStartEndSorting.clear()
+
+    chooseSpace.clear()
+
+    decStopFlag = 0
+    decStopCal = 0
 
 
 if __name__ == "__main__":
-    startSimulate()
+    startSimulate(speedFleet, times, saveName1, saveName2,saveName3)
     print("fsdf")
